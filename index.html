@@ -559,7 +559,6 @@ window.onload = function() {
   updateMonthFilterOptions();
   onDateChanged();
 
-  // URLが登録されていれば起動時に自動同期を試みる
   if (localStorage.getItem(GAS_URL_KEY)) {
     syncWithCloud(true);
   }
@@ -1079,7 +1078,7 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-/* --- クラウド同期（Google Apps Script連携） --- */
+/* --- クラウド同期（CORS回避仕様） --- */
 function openSettingsModal() {
   document.getElementById('gas-url-input').value = localStorage.getItem(GAS_URL_KEY) || "";
   document.getElementById('settings-modal').classList.remove('hidden');
@@ -1094,13 +1093,11 @@ function saveGasUrlSetting() {
   localStorage.setItem(GAS_URL_KEY, url);
   closeSettingsModal();
   if (url) {
-    syncWithCloud();
-  } else {
-    document.getElementById('sync-status-indicator').innerText = "ローカル保存済み";
+    pushToCloud(true);
   }
 }
 
-async function pushToCloud() {
+async function pushToCloud(showAlert = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) return;
   
@@ -1108,22 +1105,26 @@ async function pushToCloud() {
   indicator.innerText = "☁️ クラウドに保存中...";
 
   try {
+    // text/plain形式で送信してCORSプリフライトを回避
     await fetch(url, {
       method: "POST",
       mode: "no-cors",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(logs)
     });
+    
     indicator.innerText = `☁️ クラウド保存済み (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+    if (showAlert) alert('ローカルのデータをスプレッドシートへ送信しました！');
   } catch (err) {
     indicator.innerText = "⚠️ クラウド保存に失敗";
+    if (showAlert) alert('クラウド保存に失敗しました。');
   }
 }
 
-async function syncWithCloud(silent = false) {
+async function syncWithCloud() {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) {
-    if (!silent) openSettingsModal();
+    openSettingsModal();
     return;
   }
 
@@ -1131,21 +1132,23 @@ async function syncWithCloud(silent = false) {
   indicator.innerText = "🔄 クラウドと同期中...";
 
   try {
-    const res = await fetch(url);
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
     const cloudData = await res.json();
 
     if (Array.isArray(cloudData) && cloudData.length > 0) {
       logs = cloudData;
       saveLogs(false);
       indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
-      if (!silent) alert('クラウドから最新データを同期しました！');
+      alert('最新データを同期しました！');
     } else {
-      await pushToCloud();
-      if (!silent) alert('ローカルのデータをクラウドに保存しました！');
+      // クラウドが空の場合はローカルからアップロード
+      await pushToCloud(false);
+      indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+      alert('ローカルのデータをスプレッドシートに保存しました！');
     }
   } catch (err) {
-    indicator.innerText = "⚠️ 同期に失敗しました";
-    if (!silent) alert('クラウドとの通信に失敗しました。URLを確認してください。');
+    indicator.innerText = "⚠️ 同期に失敗";
+    alert('同期に失敗しました。URLまたはアクセス権限（全員）を確認してください。');
   }
 }
 
