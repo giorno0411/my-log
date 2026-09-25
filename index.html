@@ -116,13 +116,13 @@
     user-select: none;
   }
   .rich-btn:active { background: #334155; }
-  .color-red { color: #f87171 !important; }
+  .color-red { color: #ff0033 !important; }
   .color-yellow { color: #fde047 !important; }
   .color-green { color: #4ade80 !important; }
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* 入力エリア（閲覧時と同じ 13px に統一） */
+  /* 入力エリア（閲覧時と同じ 13px） */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -484,7 +484,8 @@
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <!-- 真っ赤（#ff0033）に更新 -->
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
       <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
       <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
       <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
@@ -498,7 +499,7 @@
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
       <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
       <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
       <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
@@ -528,7 +529,7 @@
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
       <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
       <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
       <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
@@ -609,7 +610,6 @@ let editingInlineLogId = null;
 
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
-/* フォーカスが外れて一番下に飛ばないように装飾を適用 */
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
   document.execCommand(command, false, value);
@@ -631,7 +631,6 @@ function formatDisplayDate(dateStr) {
   return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
 }
 
-/* Enterキー押下時に段落タグを作らせず単一改行のみを挿入 */
 function setupEditorEnterKey(el) {
   if (!el || el.dataset.enterBound) return;
   el.dataset.enterBound = "true";
@@ -651,7 +650,8 @@ function cleanAndFormatLegacyText(content) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#f87171;">$1</span>');
+    // 過去の赤文字データも鮮明な赤（#ff0033）に変換
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ff0033;">$1</span>');
     html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
     html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
     html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
@@ -1073,7 +1073,7 @@ function renderLogs() {
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
               <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
               <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
               <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
@@ -1087,7 +1087,7 @@ function renderLogs() {
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
               <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
               <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
               <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
@@ -1117,7 +1117,7 @@ function renderLogs() {
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
-              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ff0033')">赤</button>
               <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
               <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
               <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
