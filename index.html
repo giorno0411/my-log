@@ -122,7 +122,7 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* 入力エリア（余分な段落余白を完全ゼロ化） */
+  /* 入力エリア（閲覧時と同じ 13px に統一） */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -130,7 +130,7 @@
     color: var(--text-main);
     border-radius: 0 0 6px 6px;
     padding: 8px 10px;
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
     font-family: inherit;
     width: 100%;
@@ -160,7 +160,7 @@
     color: var(--text-main);
     border-radius: 6px;
     padding: 8px 10px;
-    font-size: 14px;
+    font-size: 13px;
     outline: none;
     font-family: inherit;
     width: 100%;
@@ -266,7 +266,7 @@
   }
   .toggle-filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
-  /* ログ表示 */
+  /* ログ表示（13px） */
   .log-group { margin-bottom: 20px; }
   .log-date-header {
     font-size: 14px;
@@ -316,8 +316,8 @@
   
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
   
-  /* 表示枠内のdiv・pの余白もゼロ化 */
   .log-tasks, .log-detail, .log-memo, .qa-q, .qa-a {
+    font-size: 13px;
     line-height: 1.4 !important;
     word-break: break-word;
   }
@@ -332,7 +332,6 @@
   }
 
   .log-tasks {
-    font-size: 13px;
     color: #e2e8f0;
     background: #131d2e;
     padding: 8px 10px;
@@ -340,7 +339,6 @@
     border-left: 3px solid var(--warning);
   }
   .log-detail {
-    font-size: 13px;
     color: #e2e8f0;
     background: #131d2e;
     padding: 8px 10px;
@@ -354,10 +352,9 @@
     padding: 8px 10px;
     border-left: 3px solid var(--question-color);
   }
-  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; }
-  .qa-a { color: #6ee7b7; font-size: 13px; }
+  .qa-q { color: #fda4af; font-weight: bold; margin-bottom: 3px; }
+  .qa-a { color: #6ee7b7; }
   .log-memo {
-    font-size: 13px;
     color: #e2e8f0;
     background: #131d2e;
     padding: 8px 10px;
@@ -646,12 +643,10 @@ function setupEditorEnterKey(el) {
   });
 }
 
-/* 過去の古い改行や記号をスッキリした1行改行に統一 */
 function cleanAndFormatLegacyText(content) {
   if (!content) return "";
   let html = content;
 
-  // 以前の独自マークダウン記法が残っていた場合は変換
   if (!html.includes('<') || !html.includes('>')) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -664,7 +659,6 @@ function cleanAndFormatLegacyText(content) {
     html = html.replace(/\n/g, '<br>');
   }
 
-  // <div><br></div> などの重複した余分な改行スペースを圧縮
   html = html.replace(/<div><br><\/div>/gi, '<br>');
   html = html.replace(/<p><br><\/p>/gi, '<br>');
 
@@ -810,7 +804,6 @@ function resetFormForNew() {
 
 function cleanEditorHTML(html) {
   if (!html) return "";
-  // <div>や<p>で包まれた行を単一の<br>区切りに統一
   let cleaned = html.replace(/<div><br><\/div>/gi, '<br>')
                     .replace(/<div>/gi, '<br>')
                     .replace(/<\/div>/gi, '')
@@ -898,7 +891,6 @@ function moveLogOrder(id, date, direction) {
 function startInlineEdit(id) {
   editingInlineLogId = id;
   renderLogs();
-  // インライン編集枠が開いたら即座に改行制御を適用
   const form = document.getElementById(`inline-form-${id}`);
   if (form) {
     form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
