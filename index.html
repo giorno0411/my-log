@@ -90,6 +90,37 @@
     justify-content: space-between;
     align-items: center;
   }
+
+  /* テキスト装飾ツールバー */
+  .format-toolbar {
+    display: flex;
+    gap: 4px;
+    background: #090e1a;
+    padding: 4px 6px;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid var(--card-border);
+    border-bottom: none;
+    align-items: center;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .fmt-btn {
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .fmt-btn:hover { background: #334155; }
+  .fmt-red { color: #f87171; }
+  .fmt-yellow { color: #fde047; }
+  .fmt-green { color: #4ade80; }
+  .fmt-blue { color: #60a5fa; }
+  .fmt-marker { background: #422006; color: #fef08a; border-color: #854d0e; }
+
   input[type="date"], input[type="text"], select, textarea {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -103,6 +134,11 @@
   }
   input:focus, select:focus, textarea:focus { border-color: var(--primary); }
   
+  .toolbar-textarea {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+  }
+
   textarea {
     min-height: 55px;
     resize: vertical;
@@ -270,6 +306,17 @@
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
+  
+  /* 書式スタイル装飾クラス */
+  .fmt-render-b { font-weight: bold; color: #fff; }
+  .fmt-render-del { text-decoration: line-through; opacity: 0.65; }
+  .fmt-render-red { color: #f87171 !important; }
+  .fmt-render-yellow { color: #fde047 !important; }
+  .fmt-render-green { color: #4ade80 !important; }
+  .fmt-render-blue { color: #60a5fa !important; }
+  .fmt-render-m-yellow { background-color: rgba(234, 179, 8, 0.35); padding: 1px 3px; border-radius: 3px; }
+  .fmt-render-m-pink { background-color: rgba(244, 63, 94, 0.35); padding: 1px 3px; border-radius: 3px; }
+
   .log-tasks {
     font-size: 13px;
     color: #e2e8f0;
@@ -408,6 +455,12 @@
     .qa-q { color: #be123c !important; }
     .qa-a { color: #047857 !important; }
     .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
+    .fmt-render-m-yellow { background-color: #fef08a !important; color: #000 !important; }
+    .fmt-render-m-pink { background-color: #fbcfe8 !important; color: #000 !important; }
+    .fmt-render-red { color: #dc2626 !important; }
+    .fmt-render-yellow { color: #ca8a04 !important; }
+    .fmt-render-green { color: #16a34a !important; }
+    .fmt-render-blue { color: #2563eb !important; }
   }
 </style>
 </head>
@@ -433,10 +486,28 @@
     </div>
     
     <span class="input-label">📌 業務内容</span>
-    <textarea id="input-tasks" placeholder=""></textarea>
+    <div class="format-toolbar">
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-tasks', '**', '**')"><b>B</b></button>
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-tasks', '~~', '~~')"><del>S</del></button>
+      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-tasks', '{red:', '}')">赤</button>
+      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-tasks', '{yellow:', '}')">黄</button>
+      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-tasks', '{green:', '}')">緑</button>
+      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-tasks', '{blue:', '}')">青</button>
+      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-tasks', '{m-yellow:', '}')">蛍光</button>
+    </div>
+    <textarea id="input-tasks" class="toolbar-textarea" placeholder="業務内容を入力..."></textarea>
     
     <span class="input-label">💡 学習内容</span>
-    <textarea id="input-detail" placeholder=""></textarea>
+    <div class="format-toolbar">
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-detail', '**', '**')"><b>B</b></button>
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-detail', '~~', '~~')"><del>S</del></button>
+      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-detail', '{red:', '}')">赤</button>
+      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-detail', '{yellow:', '}')">黄</button>
+      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-detail', '{green:', '}')">緑</button>
+      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-detail', '{blue:', '}')">青</button>
+      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-detail', '{m-yellow:', '}')">蛍光</button>
+    </div>
+    <textarea id="input-detail" class="toolbar-textarea" placeholder="学習内容を入力..."></textarea>
 
     <!-- 複数疑問と回答ブロック -->
     <div class="qa-box">
@@ -455,7 +526,16 @@
     </div>
 
     <span class="input-label">📋 メモ</span>
-    <textarea id="input-memo" placeholder=""></textarea>
+    <div class="format-toolbar">
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-memo', '**', '**')"><b>B</b></button>
+      <button type="button" class="fmt-btn" onclick="insertFmt('input-memo', '~~', '~~')"><del>S</del></button>
+      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-memo', '{red:', '}')">赤</button>
+      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-memo', '{yellow:', '}')">黄</button>
+      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-memo', '{green:', '}')">緑</button>
+      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-memo', '{blue:', '}')">青</button>
+      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-memo', '{m-yellow:', '}')">蛍光</button>
+    </div>
+    <textarea id="input-memo" class="toolbar-textarea" placeholder=""></textarea>
     
     <div class="form-status" id="form-status"></div>
 
@@ -544,6 +624,41 @@ function formatDisplayDate(dateStr) {
   const d = new Date(parts[0], parts[1] - 1, parts[2]);
   const weekday = isNaN(d.getDay()) ? "" : weekDaysJa[d.getDay()];
   return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
+}
+
+/* --- 文字装飾パーサー & ボタン挿入関数 --- */
+function insertFmt(elemId, beforeText, afterText) {
+  const el = document.getElementById(elemId);
+  if (!el) return;
+  const start = el.selectionStart;
+  const end = el.selectionEnd;
+  const val = el.value;
+  const selected = val.substring(start, end);
+  const replacement = beforeText + (selected || "テキスト") + afterText;
+  el.value = val.substring(0, start) + replacement + val.substring(end);
+  el.focus();
+  el.selectionStart = start + beforeText.length;
+  el.selectionEnd = start + beforeText.length + (selected ? selected.length : "テキスト".length);
+}
+
+function renderFormattedText(rawText) {
+  if (!rawText) return "";
+  let html = escapeHtml(rawText);
+
+  // 太字: **text**
+  html = html.replace(/\*\*(.+?)\*\*/g, '<span class="fmt-render-b">$1</span>');
+  // 取り消し線（斜線）: ~~text~~
+  html = html.replace(/~~(.+?)~~/g, '<span class="fmt-render-del">$1</span>');
+  // カラー装飾: {red:text}, {yellow:text}, {green:text}, {blue:text}
+  html = html.replace(/\{red:(.+?)\}/g, '<span class="fmt-render-red">$1</span>');
+  html = html.replace(/\{yellow:(.+?)\}/g, '<span class="fmt-render-yellow">$1</span>');
+  html = html.replace(/\{green:(.+?)\}/g, '<span class="fmt-render-green">$1</span>');
+  html = html.replace(/\{blue:(.+?)\}/g, '<span class="fmt-render-blue">$1</span>');
+  // マーカー装飾: {m-yellow:text}, {m-pink:text}
+  html = html.replace(/\{m-yellow:(.+?)\}/g, '<span class="fmt-render-m-yellow">$1</span>');
+  html = html.replace(/\{m-pink:(.+?)\}/g, '<span class="fmt-render-m-pink">$1</span>');
+
+  return html;
 }
 
 window.onload = function() {
@@ -671,6 +786,7 @@ function onQuestionSelectChanged() {
 
 function addQaInputRow(qVal = "", aVal = "") {
   const container = document.getElementById('qa-list-container');
+  const rowId = 'qa-q-' + Date.now() + Math.floor(Math.random()*100);
   const itemDiv = document.createElement('div');
   itemDiv.className = 'qa-item-card';
   itemDiv.innerHTML = `
@@ -990,10 +1106,28 @@ function renderLogs() {
             </div>
 
             <span class="input-label">📌 業務内容</span>
-            <textarea class="edit-tasks">${escapeHtml(item.tasks || '')}</textarea>
+            <div class="format-toolbar">
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-tasks-${item.id}', '**', '**')"><b>B</b></button>
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-tasks-${item.id}', '~~', '~~')"><del>S</del></button>
+              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-tasks-${item.id}', '{red:', '}')">赤</button>
+              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-tasks-${item.id}', '{yellow:', '}')">黄</button>
+              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-tasks-${item.id}', '{green:', '}')">緑</button>
+              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-tasks-${item.id}', '{blue:', '}')">青</button>
+              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-tasks-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            </div>
+            <textarea id="edit-tasks-${item.id}" class="edit-tasks toolbar-textarea">${escapeHtml(item.tasks || '')}</textarea>
 
             <span class="input-label">💡 学習内容</span>
-            <textarea class="edit-detail">${escapeHtml(item.detail || '')}</textarea>
+            <div class="format-toolbar">
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-detail-${item.id}', '**', '**')"><b>B</b></button>
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-detail-${item.id}', '~~', '~~')"><del>S</del></button>
+              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-detail-${item.id}', '{red:', '}')">赤</button>
+              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-detail-${item.id}', '{yellow:', '}')">黄</button>
+              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-detail-${item.id}', '{green:', '}')">緑</button>
+              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-detail-${item.id}', '{blue:', '}')">青</button>
+              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-detail-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            </div>
+            <textarea id="edit-detail-${item.id}" class="edit-detail toolbar-textarea">${escapeHtml(item.detail || '')}</textarea>
 
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
@@ -1012,7 +1146,16 @@ function renderLogs() {
             </div>
 
             <span class="input-label">📋 メモ</span>
-            <textarea class="edit-memo">${escapeHtml(item.memo || '')}</textarea>
+            <div class="format-toolbar">
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-memo-${item.id}', '**', '**')"><b>B</b></button>
+              <button type="button" class="fmt-btn" onclick="insertFmt('edit-memo-${item.id}', '~~', '~~')"><del>S</del></button>
+              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-memo-${item.id}', '{red:', '}')">赤</button>
+              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-memo-${item.id}', '{yellow:', '}')">黄</button>
+              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-memo-${item.id}', '{green:', '}')">緑</button>
+              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-memo-${item.id}', '{blue:', '}')">青</button>
+              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-memo-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            </div>
+            <textarea id="edit-memo-${item.id}" class="edit-memo toolbar-textarea">${escapeHtml(item.memo || '')}</textarea>
 
             <div class="inline-btn-group">
               <button type="button" class="btn-save-inline" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
@@ -1040,12 +1183,12 @@ function renderLogs() {
 
           ${item.tasks ? `
             <div class="log-section-label">📌 業務内容</div>
-            <div class="log-tasks">${escapeHtml(item.tasks)}</div>
+            <div class="log-tasks">${renderFormattedText(item.tasks)}</div>
           ` : ''}
 
           ${item.detail ? `
             <div class="log-section-label">💡 学習内容</div>
-            <div class="log-detail">${escapeHtml(item.detail)}</div>
+            <div class="log-detail">${renderFormattedText(item.detail)}</div>
           ` : ''}
 
           ${qaList.length > 0 ? `
@@ -1053,8 +1196,8 @@ function renderLogs() {
             <div class="log-qa-group">
               ${qaList.map((qa, i) => `
                 <div class="log-qa-single">
-                  ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${escapeHtml(qa.q)}</div>` : ''}
-                  ${qa.a ? `<div class="qa-a">A. ${escapeHtml(qa.a)}</div>` : ''}
+                  ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${renderFormattedText(qa.q)}</div>` : ''}
+                  ${qa.a ? `<div class="qa-a">A. ${renderFormattedText(qa.a)}</div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -1062,7 +1205,7 @@ function renderLogs() {
 
           ${item.memo ? `
             <div class="log-section-label">📋 メモ</div>
-            <div class="log-memo">${escapeHtml(item.memo)}</div>
+            <div class="log-memo">${renderFormattedText(item.memo)}</div>
           ` : ''}
         `;
       }
@@ -1105,7 +1248,6 @@ async function pushToCloud(showAlert = false) {
   indicator.innerText = "☁️ クラウドに保存中...";
 
   try {
-    // text/plain形式で送信してCORSプリフライトを回避
     await fetch(url, {
       method: "POST",
       mode: "no-cors",
@@ -1121,10 +1263,10 @@ async function pushToCloud(showAlert = false) {
   }
 }
 
-async function syncWithCloud() {
+async function syncWithCloud(silent = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) {
-    openSettingsModal();
+    if (!silent) openSettingsModal();
     return;
   }
 
@@ -1139,16 +1281,15 @@ async function syncWithCloud() {
       logs = cloudData;
       saveLogs(false);
       indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
-      alert('最新データを同期しました！');
+      if (!silent) alert('最新データを同期しました！');
     } else {
-      // クラウドが空の場合はローカルからアップロード
       await pushToCloud(false);
       indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
-      alert('ローカルのデータをスプレッドシートに保存しました！');
+      if (!silent) alert('ローカルのデータをスプレッドシートに保存しました！');
     }
   } catch (err) {
     indicator.innerText = "⚠️ 同期に失敗";
-    alert('同期に失敗しました。URLまたはアクセス権限（全員）を確認してください。');
+    if (!silent) alert('同期に失敗しました。URLまたはアクセス権限（全員）を確認してください。');
   }
 }
 
