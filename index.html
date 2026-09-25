@@ -91,12 +91,12 @@
     align-items: center;
   }
 
-  /* テキスト装飾ツールバー */
-  .format-toolbar {
+  /* リッチテキスト用ツールバー */
+  .rich-toolbar {
     display: flex;
     gap: 4px;
     background: #090e1a;
-    padding: 4px 6px;
+    padding: 5px 8px;
     border-radius: 6px 6px 0 0;
     border: 1px solid var(--card-border);
     border-bottom: none;
@@ -104,24 +104,52 @@
     overflow-x: auto;
     white-space: nowrap;
   }
-  .fmt-btn {
+  .rich-btn {
     background: #1e293b;
     color: #e2e8f0;
     border: 1px solid #334155;
-    padding: 2px 7px;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 11px;
     cursor: pointer;
     font-weight: bold;
+    user-select: none;
   }
-  .fmt-btn:hover { background: #334155; }
-  .fmt-red { color: #f87171; }
-  .fmt-yellow { color: #fde047; }
-  .fmt-green { color: #4ade80; }
-  .fmt-blue { color: #60a5fa; }
-  .fmt-marker { background: #422006; color: #fef08a; border-color: #854d0e; }
+  .rich-btn:active { background: #334155; }
+  .color-red { color: #f87171 !important; }
+  .color-yellow { color: #fde047 !important; }
+  .color-green { color: #4ade80 !important; }
+  .color-blue { color: #60a5fa !important; }
+  .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  input[type="date"], input[type="text"], select, textarea {
+  /* 入力エリア（contenteditable による見たまま入力） */
+  .rich-editor {
+    background: #0f172a;
+    border: 1px solid var(--card-border);
+    border-top: none;
+    color: var(--text-main);
+    border-radius: 0 0 6px 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    outline: none;
+    font-family: inherit;
+    width: 100%;
+    min-height: 60px;
+    max-height: 250px;
+    overflow-y: auto;
+    line-height: 1.5;
+    margin-bottom: 12px;
+    word-break: break-word;
+  }
+  .rich-editor:focus { border-color: var(--primary); }
+  .rich-editor:empty:before {
+    content: attr(placeholder);
+    color: #64748b;
+    pointer-events: none;
+    display: block;
+  }
+
+  input[type="date"], input[type="text"], select {
     background: #0f172a;
     border: 1px solid var(--card-border);
     color: var(--text-main);
@@ -132,29 +160,15 @@
     font-family: inherit;
     width: 100%;
   }
-  input:focus, select:focus, textarea:focus { border-color: var(--primary); }
-  
-  .toolbar-textarea {
-    border-top-left-radius: 0 !important;
-    border-top-right-radius: 0 !important;
-  }
+  input:focus, select:focus { border-color: var(--primary); }
 
-  textarea {
-    min-height: 55px;
-    resize: vertical;
-    line-height: 1.5;
-    margin-bottom: 10px;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  /* 疑問・回答用エリア */
+  /* 疑問・回答エリア */
   .qa-box {
     background: #131d2e;
     border: 1px dashed var(--card-border);
     border-radius: 8px;
     padding: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
   .qa-select { padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto; }
   .qa-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
@@ -168,7 +182,7 @@
     flex-direction: column;
     gap: 4px;
   }
-  .qa-item-card textarea { margin-bottom: 0; min-height: 40px; }
+  .qa-item-card .rich-editor { margin-bottom: 4px; min-height: 42px; border-top: 1px solid var(--card-border); border-radius: 6px; }
   .sub-label { font-size: 11px; font-weight: bold; }
   .btn-qa-del {
     position: absolute;
@@ -207,7 +221,6 @@
     font-size: 13px;
     font-weight: bold;
     cursor: pointer;
-    transition: background 0.2s;
   }
   .btn-submit:hover { background: var(--primary-hover); }
   .btn-new {
@@ -224,7 +237,6 @@
   /* フィルターバー */
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
   .filter-bar { display: flex; flex-direction: column; gap: 6px; }
-  .filter-bar input, .filter-bar select { width: 100%; }
   .date-cutoff-info {
     font-size: 11px;
     color: #94a3b8;
@@ -243,17 +255,11 @@
     align-items: center;
     gap: 6px;
     cursor: pointer;
-    user-select: none;
     font-weight: bold;
     color: #cbd5e1;
     white-space: nowrap;
   }
-  .toggle-filter-label input[type="checkbox"] {
-    cursor: pointer;
-    accent-color: var(--primary);
-    width: 15px;
-    height: 15px;
-  }
+  .toggle-filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
   /* ログ表示 */
   .log-group { margin-bottom: 20px; }
@@ -273,8 +279,6 @@
     border-radius: 8px;
     padding: 12px 14px;
     margin-bottom: 8px;
-    position: relative;
-    user-select: text;
   }
   .log-item.is-editing {
     border-color: var(--primary);
@@ -290,7 +294,7 @@
   .meta-badges { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
   .item-actions { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
   .btn-move {
-    background: #334155;
+    background: #3b4668;
     color: #cbd5e1;
     border: none;
     font-size: 11px;
@@ -306,38 +310,25 @@
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
-  
-  /* 書式スタイル装飾クラス */
-  .fmt-render-b { font-weight: bold; color: #fff; }
-  .fmt-render-del { text-decoration: line-through; opacity: 0.65; }
-  .fmt-render-red { color: #f87171 !important; }
-  .fmt-render-yellow { color: #fde047 !important; }
-  .fmt-render-green { color: #4ade80 !important; }
-  .fmt-render-blue { color: #60a5fa !important; }
-  .fmt-render-m-yellow { background-color: rgba(234, 179, 8, 0.35); padding: 1px 3px; border-radius: 3px; }
-  .fmt-render-m-pink { background-color: rgba(244, 63, 94, 0.35); padding: 1px 3px; border-radius: 3px; }
-
   .log-tasks {
     font-size: 13px;
     color: #e2e8f0;
-    white-space: pre-wrap;
-    word-break: break-word;
     line-height: 1.5;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--warning);
+    word-break: break-word;
   }
   .log-detail {
     font-size: 13px;
     color: #e2e8f0;
-    white-space: pre-wrap;
-    word-break: break-word;
     line-height: 1.5;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--primary);
+    word-break: break-word;
   }
   .log-qa-group { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
   .log-qa-single {
@@ -346,18 +337,17 @@
     padding: 8px 10px;
     border-left: 3px solid var(--question-color);
   }
-  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; white-space: pre-wrap; }
-  .qa-a { color: #6ee7b7; font-size: 13px; white-space: pre-wrap; }
+  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+  .qa-a { color: #6ee7b7; font-size: 13px; }
   .log-memo {
     font-size: 13px;
     color: #e2e8f0;
-    white-space: pre-wrap;
-    word-break: break-word;
     line-height: 1.5;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--gray-badge);
+    word-break: break-word;
   }
   
   .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -365,7 +355,6 @@
   .btn-del:hover { color: var(--danger); }
 
   /* インライン編集 */
-  .inline-edit-form { display: flex; flex-direction: column; gap: 6px; }
   .inline-btn-group { display: flex; gap: 8px; margin-top: 8px; }
   .btn-save-inline {
     flex: 1;
@@ -406,7 +395,6 @@
     width: 100%;
     max-width: 500px;
     padding: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   }
   .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   .modal-close { background: none; border: none; color: var(--text-sub); font-size: 18px; cursor: pointer; }
@@ -445,9 +433,9 @@
     .log-date-header { color: #000; font-size: 15px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
     .log-date-header::after { display: none; }
     .log-item { background: #fafafa !important; border: 1px solid #e2e8f0 !important; color: #000 !important; padding: 10px 14px; margin-bottom: 8px; }
-    .log-place { background: #f3e8ff !important; color: #6b21a8 !important; border: 1px solid #e9d5ff; }
-    .log-tag { background: #e2e8f0 !important; color: #0f172a !important; border: 1px solid #cbd5e1; }
-    .log-person { background: #e6f4ea !important; color: #137333 !important; border: 1px solid #ceead6; }
+    .log-place { background: #f3e8ff !important; color: #6b21a8 !important; }
+    .log-tag { background: #e2e8f0 !important; color: #0f172a !important; }
+    .log-person { background: #e6f4ea !important; color: #137333 !important; }
     .log-section-label { color: #475569 !important; }
     .log-tasks { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #f59e0b !important; }
     .log-detail { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #3b82f6 !important; }
@@ -455,12 +443,6 @@
     .qa-q { color: #be123c !important; }
     .qa-a { color: #047857 !important; }
     .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
-    .fmt-render-m-yellow { background-color: #fef08a !important; color: #000 !important; }
-    .fmt-render-m-pink { background-color: #fbcfe8 !important; color: #000 !important; }
-    .fmt-render-red { color: #dc2626 !important; }
-    .fmt-render-yellow { color: #ca8a04 !important; }
-    .fmt-render-green { color: #16a34a !important; }
-    .fmt-render-blue { color: #2563eb !important; }
   }
 </style>
 </head>
@@ -486,28 +468,32 @@
     </div>
     
     <span class="input-label">📌 業務内容</span>
-    <div class="format-toolbar">
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-tasks', '**', '**')"><b>B</b></button>
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-tasks', '~~', '~~')"><del>S</del></button>
-      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-tasks', '{red:', '}')">赤</button>
-      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-tasks', '{yellow:', '}')">黄</button>
-      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-tasks', '{green:', '}')">緑</button>
-      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-tasks', '{blue:', '}')">青</button>
-      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-tasks', '{m-yellow:', '}')">蛍光</button>
+    <div class="rich-toolbar">
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+      <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+      <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+      <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+      <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
-    <textarea id="input-tasks" class="toolbar-textarea" placeholder="業務内容を入力..."></textarea>
+    <div id="input-tasks" class="rich-editor" contenteditable="true" placeholder="業務内容を入力..."></div>
     
     <span class="input-label">💡 学習内容</span>
-    <div class="format-toolbar">
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-detail', '**', '**')"><b>B</b></button>
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-detail', '~~', '~~')"><del>S</del></button>
-      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-detail', '{red:', '}')">赤</button>
-      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-detail', '{yellow:', '}')">黄</button>
-      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-detail', '{green:', '}')">緑</button>
-      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-detail', '{blue:', '}')">青</button>
-      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-detail', '{m-yellow:', '}')">蛍光</button>
+    <div class="rich-toolbar">
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+      <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+      <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+      <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+      <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
-    <textarea id="input-detail" class="toolbar-textarea" placeholder="学習内容を入力..."></textarea>
+    <div id="input-detail" class="rich-editor" contenteditable="true" placeholder="学習内容を入力..."></div>
 
     <!-- 複数疑問と回答ブロック -->
     <div class="qa-box">
@@ -526,16 +512,18 @@
     </div>
 
     <span class="input-label">📋 メモ</span>
-    <div class="format-toolbar">
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-memo', '**', '**')"><b>B</b></button>
-      <button type="button" class="fmt-btn" onclick="insertFmt('input-memo', '~~', '~~')"><del>S</del></button>
-      <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('input-memo', '{red:', '}')">赤</button>
-      <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('input-memo', '{yellow:', '}')">黄</button>
-      <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('input-memo', '{green:', '}')">緑</button>
-      <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('input-memo', '{blue:', '}')">青</button>
-      <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('input-memo', '{m-yellow:', '}')">蛍光</button>
+    <div class="rich-toolbar">
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+      <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+      <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+      <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+      <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+      <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+      <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+      <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
-    <textarea id="input-memo" class="toolbar-textarea" placeholder=""></textarea>
+    <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
     
     <div class="form-status" id="form-status"></div>
 
@@ -545,7 +533,7 @@
     </div>
   </div>
 
-  <!-- 検索 & 期間・月別プルダウンフィルター -->
+  <!-- 検索 & フィルター -->
   <div class="filter-section">
     <div class="filter-bar">
       <input type="text" id="search-query" placeholder="🔍 キーワード検索" oninput="renderLogs()">
@@ -603,12 +591,17 @@
 <script>
 const STORAGE_KEY = "daily_work_learning_logs_main";
 const GAS_URL_KEY = "daily_work_learning_gas_url";
-const MIGRATED_FLAG = "daily_work_learning_migrated_done_v1";
 
 let logs = [];
 let editingInlineLogId = null;
 
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+
+/* フォーカスが外れて一番下に飛ばないように装飾を適用 */
+function applyRichStyle(e, command, value = null) {
+  e.preventDefault(); // 画面スクロールやフォーカス外れを完全防止
+  document.execCommand(command, false, value);
+}
 
 function getLocalDateString(d = new Date()) {
   const year = d.getFullYear();
@@ -626,50 +619,26 @@ function formatDisplayDate(dateStr) {
   return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
 }
 
-/* --- 文字装飾パーサー & ボタン挿入関数 --- */
-function insertFmt(elemId, beforeText, afterText) {
-  const el = document.getElementById(elemId);
-  if (!el) return;
-  const start = el.selectionStart;
-  const end = el.selectionEnd;
-  const val = el.value;
-  const selected = val.substring(start, end);
-  const replacement = beforeText + (selected || "テキスト") + afterText;
-  el.value = val.substring(0, start) + replacement + val.substring(end);
-  el.focus();
-  el.selectionStart = start + beforeText.length;
-  el.selectionEnd = start + beforeText.length + (selected ? selected.length : "テキスト".length);
-}
-
-function renderFormattedText(rawText) {
-  if (!rawText) return "";
-  let html = escapeHtml(rawText);
-
-  // 太字: **text**
-  html = html.replace(/\*\*(.+?)\*\*/g, '<span class="fmt-render-b">$1</span>');
-  // 取り消し線（斜線）: ~~text~~
-  html = html.replace(/~~(.+?)~~/g, '<span class="fmt-render-del">$1</span>');
-  // カラー装飾: {red:text}, {yellow:text}, {green:text}, {blue:text}
-  html = html.replace(/\{red:(.+?)\}/g, '<span class="fmt-render-red">$1</span>');
-  html = html.replace(/\{yellow:(.+?)\}/g, '<span class="fmt-render-yellow">$1</span>');
-  html = html.replace(/\{green:(.+?)\}/g, '<span class="fmt-render-green">$1</span>');
-  html = html.replace(/\{blue:(.+?)\}/g, '<span class="fmt-render-blue">$1</span>');
-  // マーカー装飾: {m-yellow:text}, {m-pink:text}
-  html = html.replace(/\{m-yellow:(.+?)\}/g, '<span class="fmt-render-m-yellow">$1</span>');
-  html = html.replace(/\{m-pink:(.+?)\}/g, '<span class="fmt-render-m-pink">$1</span>');
-
-  return html;
+/* 過去の記号（{red:...}など）が残っていても綺麗にHTML化する後方互換処理 */
+function cleanAndFormatLegacyText(content) {
+  if (!content) return "";
+  if (content.includes('<') && content.includes('>')) {
+    return content; // 既にHTML
+  }
+  let html = escapeHtml(content);
+  html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+  html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#f87171;">$1</span>');
+  html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
+  html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
+  html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
+  html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
+  return html.replace(/\n/g, '<br>');
 }
 
 window.onload = function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
-  
-  if (!localStorage.getItem(MIGRATED_FLAG)) {
-    oneTimeMigrateAndClean();
-    localStorage.setItem(MIGRATED_FLAG, "true");
-  }
-
   loadLogs();
   updateMonthFilterOptions();
   onDateChanged();
@@ -678,57 +647,6 @@ window.onload = function() {
     syncWithCloud(true);
   }
 };
-
-function oneTimeMigrateAndClean() {
-  let existing = [];
-  try {
-    const current = localStorage.getItem(STORAGE_KEY);
-    if (current) existing = JSON.parse(current);
-  } catch (e) {}
-
-  const oldKeys = [
-    "daily_learning_logs_v1", "simple_learning_logs_v2", "daily_learning_logs_v3",
-    "daily_learning_logs_v4", "daily_learning_logs_v5", "daily_learning_logs_v6",
-    "daily_work_learning_logs_v7", "daily_work_learning_logs_v8", "daily_work_learning_logs_v9",
-    "daily_work_learning_logs_v10", "daily_work_learning_logs_v11", "daily_work_learning_logs_v12",
-    "daily_work_learning_logs_v13", "daily_work_learning_logs_v14", "daily_work_learning_logs_v15",
-    "daily_work_learning_logs_v16", "daily_work_learning_logs_v17"
-  ];
-
-  const seen = new Set(existing.map(item => `${item.date}_${item.tasks || ''}_${item.detail || ''}`));
-
-  oldKeys.forEach(key => {
-    try {
-      const dataStr = localStorage.getItem(key);
-      if (dataStr) {
-        const parsed = JSON.parse(dataStr);
-        if (Array.isArray(parsed)) {
-          parsed.forEach(item => {
-            const normalized = {
-              id: item.id || Date.now() + Math.random(),
-              date: item.date || getLocalDateString(),
-              place: item.place || "",
-              tag: item.tag || "",
-              person: item.person || "",
-              tasks: item.tasks || item.title || "",
-              detail: item.detail || "",
-              qaList: item.qaList || (item.question || item.answer ? [{ q: item.question || "", a: item.answer || "" }] : []),
-              memo: item.memo || ""
-            };
-            const hash = `${normalized.date}_${normalized.tasks}_${normalized.detail}`;
-            if (!seen.has(hash)) {
-              existing.push(normalized);
-              seen.add(hash);
-            }
-          });
-        }
-        localStorage.removeItem(key);
-      }
-    } catch (e) {}
-  });
-
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
-}
 
 function updateMonthFilterOptions() {
   const optgroup = document.getElementById('filter-month-optgroup');
@@ -786,15 +704,14 @@ function onQuestionSelectChanged() {
 
 function addQaInputRow(qVal = "", aVal = "") {
   const container = document.getElementById('qa-list-container');
-  const rowId = 'qa-q-' + Date.now() + Math.floor(Math.random()*100);
   const itemDiv = document.createElement('div');
   itemDiv.className = 'qa-item-card';
   itemDiv.innerHTML = `
     <button type="button" class="btn-qa-del" onclick="removeQaInputRow(this)">✕</button>
     <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
-    <textarea class="qa-input-q" placeholder="">${escapeHtml(qVal)}</textarea>
+    <div class="rich-editor qa-input-q" contenteditable="true">${qVal}</div>
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
-    <textarea class="qa-input-a" placeholder="">${escapeHtml(aVal)}</textarea>
+    <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
   `;
   container.appendChild(itemDiv);
 }
@@ -841,12 +758,12 @@ function resetFormForNew() {
   document.getElementById('input-place').value = '';
   document.getElementById('input-tag').value = '';
   document.getElementById('input-person').value = '';
-  document.getElementById('input-tasks').value = '';
-  document.getElementById('input-detail').value = '';
+  document.getElementById('input-tasks').innerHTML = '';
+  document.getElementById('input-detail').innerHTML = '';
   document.getElementById('has-question-select').value = 'none';
   document.getElementById('qa-list-container').innerHTML = '';
   document.getElementById('qa-inputs-area').classList.add('hidden');
-  document.getElementById('input-memo').value = '';
+  document.getElementById('input-memo').innerHTML = '';
   
   const selectedDate = document.getElementById('input-date').value;
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加中`;
@@ -857,25 +774,27 @@ function saveNewLog() {
   const place = document.getElementById('input-place').value.trim();
   const tag = document.getElementById('input-tag').value.trim() || "業務";
   const person = document.getElementById('input-person').value.trim();
-  const tasks = document.getElementById('input-tasks').value.trim();
-  const detail = document.getElementById('input-detail').value.trim();
+  const tasks = document.getElementById('input-tasks').innerHTML.trim();
+  const detail = document.getElementById('input-detail').innerHTML.trim();
   
   const hasQuestion = document.getElementById('has-question-select').value === 'exist';
   const qaList = [];
   if (hasQuestion) {
     const cards = document.querySelectorAll('#qa-list-container .qa-item-card');
     cards.forEach(card => {
-      const q = card.querySelector('.qa-input-q').value.trim();
-      const a = card.querySelector('.qa-input-a').value.trim();
+      const q = card.querySelector('.qa-input-q').innerHTML.trim();
+      const a = card.querySelector('.qa-input-a').innerHTML.trim();
       if (q || a) {
         qaList.push({ q, a });
       }
     });
   }
 
-  const memo = document.getElementById('input-memo').value.trim();
+  const memo = document.getElementById('input-memo').innerHTML.trim();
 
-  if (!tasks && !detail && qaList.length === 0 && !memo) {
+  // 空チェック
+  const emptyRegex = /^(<br>|<div><br><\/div>|\s)*$/;
+  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo)) {
     return alert('項目を入力してください');
   }
 
@@ -885,10 +804,10 @@ function saveNewLog() {
     place: place,
     tag: tag,
     person: person,
-    tasks: tasks,
-    detail: detail,
+    tasks: emptyRegex.test(tasks) ? "" : tasks,
+    detail: emptyRegex.test(detail) ? "" : detail,
     qaList: qaList,
-    memo: memo
+    memo: emptyRegex.test(memo) ? "" : memo
   };
 
   logs.unshift(newLog);
@@ -907,9 +826,7 @@ function deleteLog(id) {
 function moveLogOrder(id, date, direction) {
   const dayIndices = [];
   logs.forEach((item, index) => {
-    if (item.date === date) {
-      dayIndices.push(index);
-    }
+    if (item.date === date) dayIndices.push(index);
   });
 
   const currentDayPos = dayIndices.findIndex(idx => logs[idx].id === id);
@@ -946,9 +863,9 @@ function addInlineQaRow(containerId) {
   itemDiv.innerHTML = `
     <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
     <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
-    <textarea class="inline-qa-q"></textarea>
+    <div class="rich-editor inline-qa-q" contenteditable="true"></div>
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
-    <textarea class="inline-qa-a"></textarea>
+    <div class="rich-editor inline-qa-a" contenteditable="true"></div>
   `;
   container.appendChild(itemDiv);
 }
@@ -964,15 +881,15 @@ function saveInlineEdit(id) {
   const place = form.querySelector('.edit-place').value.trim();
   const tag = form.querySelector('.edit-tag').value.trim() || "業務";
   const person = form.querySelector('.edit-person').value.trim();
-  const tasks = form.querySelector('.edit-tasks').value.trim();
-  const detail = form.querySelector('.edit-detail').value.trim();
-  const memo = form.querySelector('.edit-memo').value.trim();
+  const tasks = form.querySelector('.edit-tasks').innerHTML.trim();
+  const detail = form.querySelector('.edit-detail').innerHTML.trim();
+  const memo = form.querySelector('.edit-memo').innerHTML.trim();
 
   const qaCards = form.querySelectorAll('.qa-item-card');
   const qaList = [];
   qaCards.forEach(card => {
-    const q = card.querySelector('.inline-qa-q').value.trim();
-    const a = card.querySelector('.inline-qa-a').value.trim();
+    const q = card.querySelector('.inline-qa-q').innerHTML.trim();
+    const a = card.querySelector('.inline-qa-a').innerHTML.trim();
     if (q || a) {
       qaList.push({ q, a });
     }
@@ -1006,7 +923,6 @@ function renderLogs() {
 
   const now = new Date();
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthYM = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
@@ -1045,8 +961,7 @@ function renderLogs() {
     
     const qaMatch = (item.qaList && item.qaList.some(qa => 
       qa.q.toLowerCase().includes(query) || qa.a.toLowerCase().includes(query)
-    )) || (item.question && item.question.toLowerCase().includes(query))
-       || (item.answer && item.answer.toLowerCase().includes(query));
+    ));
 
     const matchesQuery = (item.place && item.place.toLowerCase().includes(query)) ||
                          item.tag.toLowerCase().includes(query) ||
@@ -1088,7 +1003,7 @@ function renderLogs() {
       itemDiv.className = 'log-item';
       
       const isEditingThis = (item.id === editingInlineLogId);
-      const qaList = item.qaList || (item.question || item.answer ? [{ q: item.question || "", a: item.answer || "" }] : []);
+      const qaList = item.qaList || [];
       const isFirst = (index === 0);
       const isLast = (index === itemsOnDay.length - 1);
 
@@ -1106,28 +1021,32 @@ function renderLogs() {
             </div>
 
             <span class="input-label">📌 業務内容</span>
-            <div class="format-toolbar">
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-tasks-${item.id}', '**', '**')"><b>B</b></button>
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-tasks-${item.id}', '~~', '~~')"><del>S</del></button>
-              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-tasks-${item.id}', '{red:', '}')">赤</button>
-              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-tasks-${item.id}', '{yellow:', '}')">黄</button>
-              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-tasks-${item.id}', '{green:', '}')">緑</button>
-              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-tasks-${item.id}', '{blue:', '}')">青</button>
-              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-tasks-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
-            <textarea id="edit-tasks-${item.id}" class="edit-tasks toolbar-textarea">${escapeHtml(item.tasks || '')}</textarea>
+            <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
 
             <span class="input-label">💡 学習内容</span>
-            <div class="format-toolbar">
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-detail-${item.id}', '**', '**')"><b>B</b></button>
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-detail-${item.id}', '~~', '~~')"><del>S</del></button>
-              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-detail-${item.id}', '{red:', '}')">赤</button>
-              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-detail-${item.id}', '{yellow:', '}')">黄</button>
-              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-detail-${item.id}', '{green:', '}')">緑</button>
-              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-detail-${item.id}', '{blue:', '}')">青</button>
-              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-detail-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
-            <textarea id="edit-detail-${item.id}" class="edit-detail toolbar-textarea">${escapeHtml(item.detail || '')}</textarea>
+            <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
 
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
@@ -1136,9 +1055,9 @@ function renderLogs() {
                   <div class="qa-item-card">
                     <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
                     <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
-                    <textarea class="inline-qa-q">${escapeHtml(qa.q || '')}</textarea>
+                    <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
                     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
-                    <textarea class="inline-qa-a">${escapeHtml(qa.a || '')}</textarea>
+                    <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
                   </div>
                 `).join('')}
               </div>
@@ -1146,16 +1065,18 @@ function renderLogs() {
             </div>
 
             <span class="input-label">📋 メモ</span>
-            <div class="format-toolbar">
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-memo-${item.id}', '**', '**')"><b>B</b></button>
-              <button type="button" class="fmt-btn" onclick="insertFmt('edit-memo-${item.id}', '~~', '~~')"><del>S</del></button>
-              <button type="button" class="fmt-btn fmt-red" onclick="insertFmt('edit-memo-${item.id}', '{red:', '}')">赤</button>
-              <button type="button" class="fmt-btn fmt-yellow" onclick="insertFmt('edit-memo-${item.id}', '{yellow:', '}')">黄</button>
-              <button type="button" class="fmt-btn fmt-green" onclick="insertFmt('edit-memo-${item.id}', '{green:', '}')">緑</button>
-              <button type="button" class="fmt-btn fmt-blue" onclick="insertFmt('edit-memo-${item.id}', '{blue:', '}')">青</button>
-              <button type="button" class="fmt-btn fmt-marker" onclick="insertFmt('edit-memo-${item.id}', '{m-yellow:', '}')">蛍光</button>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#f87171')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
-            <textarea id="edit-memo-${item.id}" class="edit-memo toolbar-textarea">${escapeHtml(item.memo || '')}</textarea>
+            <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
 
             <div class="inline-btn-group">
               <button type="button" class="btn-save-inline" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
@@ -1183,12 +1104,12 @@ function renderLogs() {
 
           ${item.tasks ? `
             <div class="log-section-label">📌 業務内容</div>
-            <div class="log-tasks">${renderFormattedText(item.tasks)}</div>
+            <div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>
           ` : ''}
 
           ${item.detail ? `
             <div class="log-section-label">💡 学習内容</div>
-            <div class="log-detail">${renderFormattedText(item.detail)}</div>
+            <div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>
           ` : ''}
 
           ${qaList.length > 0 ? `
@@ -1196,8 +1117,8 @@ function renderLogs() {
             <div class="log-qa-group">
               ${qaList.map((qa, i) => `
                 <div class="log-qa-single">
-                  ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${renderFormattedText(qa.q)}</div>` : ''}
-                  ${qa.a ? `<div class="qa-a">A. ${renderFormattedText(qa.a)}</div>` : ''}
+                  ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
+                  ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -1205,7 +1126,7 @@ function renderLogs() {
 
           ${item.memo ? `
             <div class="log-section-label">📋 メモ</div>
-            <div class="log-memo">${renderFormattedText(item.memo)}</div>
+            <div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>
           ` : ''}
         `;
       }
@@ -1221,7 +1142,7 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-/* --- クラウド同期（CORS回避仕様） --- */
+/* --- クラウド同期 --- */
 function openSettingsModal() {
   document.getElementById('gas-url-input').value = localStorage.getItem(GAS_URL_KEY) || "";
   document.getElementById('settings-modal').classList.remove('hidden');
@@ -1235,15 +1156,12 @@ function saveGasUrlSetting() {
   const url = document.getElementById('gas-url-input').value.trim();
   localStorage.setItem(GAS_URL_KEY, url);
   closeSettingsModal();
-  if (url) {
-    pushToCloud(true);
-  }
+  if (url) pushToCloud(true);
 }
 
 async function pushToCloud(showAlert = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) return;
-  
   const indicator = document.getElementById('sync-status-indicator');
   indicator.innerText = "☁️ クラウドに保存中...";
 
@@ -1254,7 +1172,6 @@ async function pushToCloud(showAlert = false) {
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(logs)
     });
-    
     indicator.innerText = `☁️ クラウド保存済み (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
     if (showAlert) alert('ローカルのデータをスプレッドシートへ送信しました！');
   } catch (err) {
@@ -1269,7 +1186,6 @@ async function syncWithCloud(silent = false) {
     if (!silent) openSettingsModal();
     return;
   }
-
   const indicator = document.getElementById('sync-status-indicator');
   indicator.innerText = "🔄 クラウドと同期中...";
 
