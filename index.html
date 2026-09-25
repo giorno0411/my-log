@@ -122,7 +122,7 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* 入力エリア（resize: vertical で下ドラッグ拡大可能） */
+  /* 入力エリア（余分な段落余白を完全ゼロ化） */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -140,6 +140,11 @@
     word-break: break-word;
     resize: vertical;
     overflow: auto;
+  }
+  .rich-editor div, .rich-editor p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
   }
   .rich-editor:focus { border-color: var(--primary); }
   .rich-editor:empty:before {
@@ -310,25 +315,37 @@
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
+  
+  /* 表示枠内のdiv・pの余白もゼロ化 */
+  .log-tasks, .log-detail, .log-memo, .qa-q, .qa-a {
+    line-height: 1.4 !important;
+    word-break: break-word;
+  }
+  .log-tasks div, .log-tasks p,
+  .log-detail div, .log-detail p,
+  .log-memo div, .log-memo p,
+  .qa-q div, .qa-q p,
+  .qa-a div, .qa-a p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1.4 !important;
+  }
+
   .log-tasks {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--warning);
-    word-break: break-word;
   }
   .log-detail {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--primary);
-    word-break: break-word;
   }
   .log-qa-group { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
   .log-qa-single {
@@ -337,17 +354,15 @@
     padding: 8px 10px;
     border-left: 3px solid var(--question-color);
   }
-  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; line-height: 1.4; }
-  .qa-a { color: #6ee7b7; font-size: 13px; line-height: 1.4; }
+  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+  .qa-a { color: #6ee7b7; font-size: 13px; }
   .log-memo {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
     border-left: 3px solid var(--gray-badge);
-    word-break: break-word;
   }
   
   .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
@@ -619,8 +634,10 @@ function formatDisplayDate(dateStr) {
   return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
 }
 
-/* Enterキー押下時に大きな段落ではなく単一の<br>改行を挿入 */
+/* Enterキー押下時に段落タグを作らせず単一改行のみを挿入 */
 function setupEditorEnterKey(el) {
+  if (!el || el.dataset.enterBound) return;
+  el.dataset.enterBound = "true";
   el.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -629,27 +646,35 @@ function setupEditorEnterKey(el) {
   });
 }
 
+/* 過去の古い改行や記号をスッキリした1行改行に統一 */
 function cleanAndFormatLegacyText(content) {
   if (!content) return "";
-  if (content.includes('<') && content.includes('>')) {
-    return content;
+  let html = content;
+
+  // 以前の独自マークダウン記法が残っていた場合は変換
+  if (!html.includes('<') || !html.includes('>')) {
+    html = escapeHtml(html);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#f87171;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
+    html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
+    html = html.replace(/\n/g, '<br>');
   }
-  let html = escapeHtml(content);
-  html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
-  html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-  html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#f87171;">$1</span>');
-  html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
-  html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
-  html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
-  html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
-  return html.replace(/\n/g, '<br>');
+
+  // <div><br></div> などの重複した余分な改行スペースを圧縮
+  html = html.replace(/<div><br><\/div>/gi, '<br>');
+  html = html.replace(/<p><br><\/p>/gi, '<br>');
+
+  return html;
 }
 
 window.onload = function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
 
-  // 各エディタにEnter改行制御を適用
   document.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
 
   loadLogs();
@@ -783,30 +808,42 @@ function resetFormForNew() {
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加中`;
 }
 
+function cleanEditorHTML(html) {
+  if (!html) return "";
+  // <div>や<p>で包まれた行を単一の<br>区切りに統一
+  let cleaned = html.replace(/<div><br><\/div>/gi, '<br>')
+                    .replace(/<div>/gi, '<br>')
+                    .replace(/<\/div>/gi, '')
+                    .replace(/<p>/gi, '<br>')
+                    .replace(/<\/p>/gi, '');
+  if (cleaned.startsWith('<br>')) cleaned = cleaned.substring(4);
+  return cleaned.trim();
+}
+
 function saveNewLog() {
   const date = document.getElementById('input-date').value;
   const place = document.getElementById('input-place').value.trim();
   const tag = document.getElementById('input-tag').value.trim() || "業務";
   const person = document.getElementById('input-person').value.trim();
-  const tasks = document.getElementById('input-tasks').innerHTML.trim();
-  const detail = document.getElementById('input-detail').innerHTML.trim();
+  const tasks = cleanEditorHTML(document.getElementById('input-tasks').innerHTML);
+  const detail = cleanEditorHTML(document.getElementById('input-detail').innerHTML);
   
   const hasQuestion = document.getElementById('has-question-select').value === 'exist';
   const qaList = [];
   if (hasQuestion) {
     const cards = document.querySelectorAll('#qa-list-container .qa-item-card');
     cards.forEach(card => {
-      const q = card.querySelector('.qa-input-q').innerHTML.trim();
-      const a = card.querySelector('.qa-input-a').innerHTML.trim();
+      const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
+      const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
       if (q || a) {
         qaList.push({ q, a });
       }
     });
   }
 
-  const memo = document.getElementById('input-memo').innerHTML.trim();
+  const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
 
-  const emptyRegex = /^(<br>|<div><br><\/div>|\s)*$/;
+  const emptyRegex = /^(<br>|\s)*$/;
   if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo)) {
     return alert('項目を入力してください');
   }
@@ -861,6 +898,11 @@ function moveLogOrder(id, date, direction) {
 function startInlineEdit(id) {
   editingInlineLogId = id;
   renderLogs();
+  // インライン編集枠が開いたら即座に改行制御を適用
+  const form = document.getElementById(`inline-form-${id}`);
+  if (form) {
+    form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+  }
 }
 
 function cancelInlineEdit() {
@@ -895,15 +937,15 @@ function saveInlineEdit(id) {
   const place = form.querySelector('.edit-place').value.trim();
   const tag = form.querySelector('.edit-tag').value.trim() || "業務";
   const person = form.querySelector('.edit-person').value.trim();
-  const tasks = form.querySelector('.edit-tasks').innerHTML.trim();
-  const detail = form.querySelector('.edit-detail').innerHTML.trim();
-  const memo = form.querySelector('.edit-memo').innerHTML.trim();
+  const tasks = cleanEditorHTML(form.querySelector('.edit-tasks').innerHTML);
+  const detail = cleanEditorHTML(form.querySelector('.edit-detail').innerHTML);
+  const memo = cleanEditorHTML(form.querySelector('.edit-memo').innerHTML);
 
   const qaCards = form.querySelectorAll('.qa-item-card');
   const qaList = [];
   qaCards.forEach(card => {
-    const q = card.querySelector('.inline-qa-q').innerHTML.trim();
-    const a = card.querySelector('.inline-qa-a').innerHTML.trim();
+    const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
+    const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
     if (q || a) {
       qaList.push({ q, a });
     }
