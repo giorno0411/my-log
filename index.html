@@ -366,7 +366,45 @@
   .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
   .btn-del:hover { color: var(--danger); }
 
-  /* インライン編集 */
+  /* インライン編集ヘッダー（右上保存ボタン用） */
+  .inline-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--card-border);
+  }
+  .inline-title-tag {
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--primary);
+  }
+  .inline-top-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .btn-save-mini {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-cancel-mini {
+    background: #334155;
+    color: var(--text-sub);
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* 下部インラインボタングループ */
   .inline-btn-group { display: flex; gap: 8px; margin-top: 8px; }
   .btn-save-inline {
     flex: 1;
@@ -1062,6 +1100,15 @@ function renderLogs() {
         
         itemDiv.innerHTML = `
           <div class="inline-edit-form" id="inline-form-${item.id}">
+            <!-- 右上保存用ヘッダーバー -->
+            <div class="inline-top-bar">
+              <span class="inline-title-tag">✏️ 記録を編集中</span>
+              <div class="inline-top-actions">
+                <button type="button" class="btn-save-mini" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
+                <button type="button" class="btn-cancel-mini" onclick="cancelInlineEdit()">✕</button>
+              </div>
+            </div>
+
             <div class="form-row">
               <input type="date" class="edit-date" value="${item.date}">
               <input type="text" class="edit-place" placeholder="場所" value="${escapeHtml(item.place || '')}">
