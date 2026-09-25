@@ -122,7 +122,7 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* 入力エリア（contenteditable による見たまま入力） */
+  /* 入力エリア（resize: vertical で下ドラッグ拡大可能） */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -135,11 +135,11 @@
     font-family: inherit;
     width: 100%;
     min-height: 60px;
-    max-height: 250px;
-    overflow-y: auto;
-    line-height: 1.5;
+    line-height: 1.4;
     margin-bottom: 12px;
     word-break: break-word;
+    resize: vertical;
+    overflow: auto;
   }
   .rich-editor:focus { border-color: var(--primary); }
   .rich-editor:empty:before {
@@ -313,7 +313,7 @@
   .log-tasks {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.5;
+    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
@@ -323,7 +323,7 @@
   .log-detail {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.5;
+    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
@@ -337,12 +337,12 @@
     padding: 8px 10px;
     border-left: 3px solid var(--question-color);
   }
-  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; }
-  .qa-a { color: #6ee7b7; font-size: 13px; }
+  .qa-q { color: #fda4af; font-size: 13px; font-weight: bold; margin-bottom: 3px; line-height: 1.4; }
+  .qa-a { color: #6ee7b7; font-size: 13px; line-height: 1.4; }
   .log-memo {
     font-size: 13px;
     color: #e2e8f0;
-    line-height: 1.5;
+    line-height: 1.4;
     background: #131d2e;
     padding: 8px 10px;
     border-radius: 6px;
@@ -599,7 +599,7 @@ const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)
 
 /* フォーカスが外れて一番下に飛ばないように装飾を適用 */
 function applyRichStyle(e, command, value = null) {
-  e.preventDefault(); // 画面スクロールやフォーカス外れを完全防止
+  e.preventDefault();
   document.execCommand(command, false, value);
 }
 
@@ -619,11 +619,20 @@ function formatDisplayDate(dateStr) {
   return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
 }
 
-/* 過去の記号（{red:...}など）が残っていても綺麗にHTML化する後方互換処理 */
+/* Enterキー押下時に大きな段落ではなく単一の<br>改行を挿入 */
+function setupEditorEnterKey(el) {
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+  });
+}
+
 function cleanAndFormatLegacyText(content) {
   if (!content) return "";
   if (content.includes('<') && content.includes('>')) {
-    return content; // 既にHTML
+    return content;
   }
   let html = escapeHtml(content);
   html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -639,6 +648,10 @@ function cleanAndFormatLegacyText(content) {
 window.onload = function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
+
+  // 各エディタにEnter改行制御を適用
+  document.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+
   loadLogs();
   updateMonthFilterOptions();
   onDateChanged();
@@ -714,6 +727,7 @@ function addQaInputRow(qVal = "", aVal = "") {
     <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
   `;
   container.appendChild(itemDiv);
+  itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
 }
 
 function removeQaInputRow(btn) {
@@ -792,7 +806,6 @@ function saveNewLog() {
 
   const memo = document.getElementById('input-memo').innerHTML.trim();
 
-  // 空チェック
   const emptyRegex = /^(<br>|<div><br><\/div>|\s)*$/;
   if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo)) {
     return alert('項目を入力してください');
@@ -868,6 +881,7 @@ function addInlineQaRow(containerId) {
     <div class="rich-editor inline-qa-a" contenteditable="true"></div>
   `;
   container.appendChild(itemDiv);
+  itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
 }
 
 function saveInlineEdit(id) {
@@ -1084,6 +1098,7 @@ function renderLogs() {
             </div>
           </div>
         `;
+        itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
       } else {
         itemDiv.innerHTML = `
           <div class="log-item-header">
