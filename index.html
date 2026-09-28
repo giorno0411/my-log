@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>日報・学習記録 (Daily Work & Learning Log)</title>
+<title>日報・学習記録ノート</title>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -66,7 +66,6 @@
   .btn-sync { background: var(--accent); }
   .btn-settings { background: #475569; }
 
-  /* 入力カード */
   .card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -91,7 +90,6 @@
     align-items: center;
   }
 
-  /* リッチテキスト用ツールバー */
   .rich-toolbar {
     display: flex;
     gap: 4px;
@@ -122,7 +120,6 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* 入力エリア（閲覧時と同じ 13px） */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -167,7 +164,6 @@
   }
   input:focus, select:focus { border-color: var(--primary); }
 
-  /* 疑問・回答エリア */
   .qa-box {
     background: #131d2e;
     border: 1px dashed var(--card-border);
@@ -239,7 +235,6 @@
     cursor: pointer;
   }
 
-  /* フィルターバー */
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
   .filter-bar { display: flex; flex-direction: column; gap: 6px; }
   .date-cutoff-info {
@@ -266,7 +261,6 @@
   }
   .toggle-filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
-  /* ログ表示（13px） */
   .log-group { margin-bottom: 20px; }
   .log-date-header {
     font-size: 14px;
@@ -366,7 +360,6 @@
   .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
   .btn-del:hover { color: var(--danger); }
 
-  /* インライン編集ヘッダー（右上保存ボタン用） */
   .inline-top-bar {
     display: flex;
     justify-content: space-between;
@@ -375,15 +368,8 @@
     padding-bottom: 6px;
     border-bottom: 1px dashed var(--card-border);
   }
-  .inline-title-tag {
-    font-size: 12px;
-    font-weight: bold;
-    color: var(--primary);
-  }
-  .inline-top-actions {
-    display: flex;
-    gap: 6px;
-  }
+  .inline-title-tag { font-size: 12px; font-weight: bold; color: var(--primary); }
+  .inline-top-actions { display: flex; gap: 6px; }
   .btn-save-mini {
     background: var(--accent);
     color: white;
@@ -404,7 +390,6 @@
     cursor: pointer;
   }
 
-  /* 下部インラインボタングループ */
   .inline-btn-group { display: flex; gap: 8px; margin-top: 8px; }
   .btn-save-inline {
     flex: 1;
@@ -418,6 +403,7 @@
     cursor: pointer;
   }
   .btn-cancel-inline {
+    flex: 1;
     background: #334155;
     color: var(--text-main);
     border: none;
@@ -427,7 +413,6 @@
     cursor: pointer;
   }
 
-  /* 設定モーダル */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -451,7 +436,6 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* フッター */
   .footer-actions {
     display: flex;
     flex-direction: column;
@@ -464,7 +448,6 @@
     color: var(--text-sub);
   }
   .footer-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; text-decoration: underline; padding: 0; }
-
   .hidden { display: none; }
 
   @media (min-width: 500px) {
@@ -500,7 +483,7 @@
 
 <div class="container">
   <header>
-    <h1>📝 日報・学習記録</h1>
+    <h1>📝 日報・学習記録ノート</h1>
     <div class="header-actions">
       <button class="btn-header btn-sync" onclick="syncWithCloud()">🔄 同期</button>
       <button class="btn-header btn-settings" onclick="openSettingsModal()">⚙️ 設定</button>
@@ -508,7 +491,6 @@
     </div>
   </header>
 
-  <!-- 上部新規入力フォーム -->
   <div class="card">
     <div class="form-row">
       <input type="date" id="input-date" onchange="onDateChanged()">
@@ -547,7 +529,6 @@
     </div>
     <div id="input-detail" class="rich-editor" contenteditable="true" placeholder="学習内容を入力..."></div>
 
-    <!-- 複数疑問と回答ブロック -->
     <div class="qa-box">
       <div class="input-label">
         <span>❓ 学習時の疑問点・質問</span>
@@ -556,7 +537,6 @@
           <option value="exist">疑問あり</option>
         </select>
       </div>
-
       <div class="hidden" id="qa-inputs-area">
         <div class="qa-list-container" id="qa-list-container"></div>
         <button type="button" class="btn-add-qa" onclick="addQaInputRow()">＋ 疑問を追加</button>
@@ -579,18 +559,15 @@
     <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
     
     <div class="form-status" id="form-status"></div>
-
     <div class="btn-group">
       <button class="btn-submit" id="btn-submit" onclick="saveNewLog()">＋ 記録を追加</button>
       <button class="btn-new" onclick="resetFormForNew()">クリア</button>
     </div>
   </div>
 
-  <!-- 検索 & フィルター -->
   <div class="filter-section">
     <div class="filter-bar">
       <input type="text" id="search-query" placeholder="🔍 キーワード検索" oninput="renderLogs()">
-      
       <select id="filter-period-select" onchange="onPeriodFilterChanged()">
         <option value="all">📅 期間: 全て</option>
         <option value="this-month">📅 今月</option>
@@ -599,7 +576,6 @@
         <optgroup label="月別で絞り込み" id="filter-month-optgroup"></optgroup>
       </select>
     </div>
-
     <div class="date-cutoff-info" id="date-cutoff-info">
       <span id="cutoff-status-text">表示対象: 全記録</span>
       <label class="toggle-filter-label" id="toggle-filter-wrapper">
@@ -609,10 +585,8 @@
     </div>
   </div>
 
-  <!-- 記録一覧 -->
   <div id="logs-container"></div>
 
-  <!-- フッター -->
   <div class="footer-actions">
     <span id="sync-status-indicator">ローカル保存済み</span>
     <div>
@@ -623,7 +597,6 @@
   </div>
 </div>
 
-<!-- 設定モーダル -->
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-card">
     <div class="modal-title">
@@ -644,10 +617,8 @@
 <script>
 const STORAGE_KEY = "daily_work_learning_logs_main";
 const GAS_URL_KEY = "daily_work_learning_gas_url";
-
 let logs = [];
 let editingInlineLogId = null;
-
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
 function applyRichStyle(e, command, value = null) {
@@ -685,7 +656,6 @@ function setupEditorEnterKey(el) {
 function cleanAndFormatLegacyText(content) {
   if (!content) return "";
   let html = content;
-
   if (!html.includes('<') || !html.includes('>')) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
@@ -697,40 +667,29 @@ function cleanAndFormatLegacyText(content) {
     html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
     html = html.replace(/\n/g, '<br>');
   }
-
   html = html.replace(/<div><br><\/div>/gi, '<br>');
   html = html.replace(/<p><br><\/p>/gi, '<br>');
-
   return html;
 }
 
 window.onload = function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
-
   document.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-
   loadLogs();
   updateMonthFilterOptions();
   onDateChanged();
-
-  if (localStorage.getItem(GAS_URL_KEY)) {
-    syncWithCloud(true);
-  }
+  if (localStorage.getItem(GAS_URL_KEY)) syncWithCloud(true);
 };
 
 function updateMonthFilterOptions() {
   const optgroup = document.getElementById('filter-month-optgroup');
   if (!optgroup) return;
   optgroup.innerHTML = '';
-
   const monthsSet = new Set();
   logs.forEach(item => {
-    if (item.date && item.date.length >= 7) {
-      monthsSet.add(item.date.substring(0, 7));
-    }
+    if (item.date && item.date.length >= 7) monthsSet.add(item.date.substring(0, 7));
   });
-
   const sortedMonths = Array.from(monthsSet).sort().reverse();
   sortedMonths.forEach(ym => {
     const [y, m] = ym.split('-');
@@ -744,11 +703,7 @@ function updateMonthFilterOptions() {
 function onPeriodFilterChanged() {
   const period = document.getElementById('filter-period-select').value;
   const toggleWrapper = document.getElementById('toggle-filter-wrapper');
-  if (period === 'all') {
-    toggleWrapper.style.display = 'flex';
-  } else {
-    toggleWrapper.style.display = 'none';
-  }
+  toggleWrapper.style.display = (period === 'all') ? 'flex' : 'none';
   renderLogs();
 }
 
@@ -765,9 +720,7 @@ function onQuestionSelectChanged() {
   const container = document.getElementById('qa-list-container');
   if (select.value === 'exist') {
     area.classList.remove('hidden');
-    if (container.children.length === 0) {
-      addQaInputRow();
-    }
+    if (container.children.length === 0) addQaInputRow();
   } else {
     area.classList.add('hidden');
   }
@@ -799,11 +752,7 @@ function removeQaInputRow(btn) {
 
 function loadLogs() {
   const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    logs = JSON.parse(saved);
-  } else {
-    logs = [];
-  }
+  logs = saved ? JSON.parse(saved) : [];
   updateMonthFilterOptions();
   renderLogs();
 }
@@ -812,17 +761,13 @@ function saveLogs(triggerCloud = true) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
   updateMonthFilterOptions();
   renderLogs();
-
-  if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) {
-    pushToCloud();
-  }
+  if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
 }
 
 function onDateChanged() {
   const selectedDate = document.getElementById('input-date').value;
   if (!selectedDate) return;
-  const formattedDate = formatDisplayDate(selectedDate);
-  document.getElementById('form-status').innerText = `✨ ${formattedDate} に記録を追加できます`;
+  document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加できます`;
   renderLogs();
 }
 
@@ -836,7 +781,6 @@ function resetFormForNew() {
   document.getElementById('qa-list-container').innerHTML = '';
   document.getElementById('qa-inputs-area').classList.add('hidden');
   document.getElementById('input-memo').innerHTML = '';
-  
   const selectedDate = document.getElementById('input-date').value;
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加中`;
 }
@@ -867,14 +811,11 @@ function saveNewLog() {
     cards.forEach(card => {
       const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
       const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
-      if (q || a) {
-        qaList.push({ q, a });
-      }
+      if (q || a) qaList.push({ q, a });
     });
   }
 
   const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
-
   const emptyRegex = /^(<br>|\s)*$/;
   if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo)) {
     return alert('項目を入力してください');
@@ -907,23 +848,13 @@ function deleteLog(id) {
 
 function moveLogOrder(id, date, direction) {
   const dayIndices = [];
-  logs.forEach((item, index) => {
-    if (item.date === date) dayIndices.push(index);
-  });
-
+  logs.forEach((item, index) => { if (item.date === date) dayIndices.push(index); });
   const currentDayPos = dayIndices.findIndex(idx => logs[idx].id === id);
   if (currentDayPos === -1) return;
-
   const targetDayPos = currentDayPos + direction;
   if (targetDayPos < 0 || targetDayPos >= dayIndices.length) return;
-
-  const idxA = dayIndices[currentDayPos];
-  const idxB = dayIndices[targetDayPos];
-
-  const temp = logs[idxA];
-  logs[idxA] = logs[idxB];
-  logs[idxB] = temp;
-
+  const idxA = dayIndices[currentDayPos], idxB = dayIndices[targetDayPos];
+  const temp = logs[idxA]; logs[idxA] = logs[idxB]; logs[idxB] = temp;
   saveLogs(true);
 }
 
@@ -931,9 +862,7 @@ function startInlineEdit(id) {
   editingInlineLogId = id;
   renderLogs();
   const form = document.getElementById(`inline-form-${id}`);
-  if (form) {
-    form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-  }
+  if (form) form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
 }
 
 function cancelInlineEdit() {
@@ -960,7 +889,6 @@ function addInlineQaRow(containerId) {
 function saveInlineEdit(id) {
   const idx = logs.findIndex(item => item.id === id);
   if (idx === -1) return;
-
   const form = document.getElementById(`inline-form-${id}`);
   if (!form) return;
 
@@ -977,9 +905,7 @@ function saveInlineEdit(id) {
   qaCards.forEach(card => {
     const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
     const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
-    if (q || a) {
-      qaList.push({ q, a });
-    }
+    if (q || a) qaList.push({ q, a });
   });
 
   logs[idx] = {
@@ -1007,49 +933,31 @@ function renderLogs() {
   const statusText = document.getElementById('cutoff-status-text');
   
   container.innerHTML = '';
-
   const now = new Date();
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const lastMonthYM = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
-  if (period === 'this-month') {
-    statusText.innerHTML = `📆 <b>今月 (${currentYM.replace('-', '年')}月)</b>`;
-  } else if (period === 'last-month') {
-    statusText.innerHTML = `📆 <b>先月 (${lastMonthYM.replace('-', '年')}月)</b>`;
-  } else if (period === 'selected-date') {
-    statusText.innerHTML = `📅 <b>${formatDisplayDate(selectedDate)} (当日のみ)</b>`;
-  } else if (period.startsWith('month:')) {
+  if (period === 'this-month') statusText.innerHTML = `📆 <b>今月 (${currentYM.replace('-', '年')}月)</b>`;
+  else if (period === 'last-month') statusText.innerHTML = `📆 <b>先月 (${lastMonthYM.replace('-', '年')}月)</b>`;
+  else if (period === 'selected-date') statusText.innerHTML = `📅 <b>${formatDisplayDate(selectedDate)} (当日のみ)</b>`;
+  else if (period.startsWith('month:')) {
     const ym = period.replace('month:', '');
     const [y, m] = ym.split('-');
     statusText.innerHTML = `📆 <b>${y}年${parseInt(m, 10)}月</b>`;
   } else {
-    if (isPastFilterOn && selectedDate) {
-      statusText.innerHTML = `📅 <b>${formatDisplayDate(selectedDate)}</b> 以前`;
-    } else {
-      statusText.innerHTML = `🌐 <b>全期間</b>`;
-    }
+    statusText.innerHTML = (isPastFilterOn && selectedDate) ? `📅 <b>${formatDisplayDate(selectedDate)}</b> 以前` : `🌐 <b>全期間</b>`;
   }
 
   const filtered = logs.filter(item => {
     let periodMatch = true;
-    if (period === 'this-month') {
-      periodMatch = item.date.startsWith(currentYM);
-    } else if (period === 'last-month') {
-      periodMatch = item.date.startsWith(lastMonthYM);
-    } else if (period === 'selected-date') {
-      periodMatch = (item.date === selectedDate);
-    } else if (period.startsWith('month:')) {
-      const ym = period.replace('month:', '');
-      periodMatch = item.date.startsWith(ym);
-    } else {
-      periodMatch = isPastFilterOn ? (selectedDate ? item.date <= selectedDate : true) : true;
-    }
+    if (period === 'this-month') periodMatch = item.date.startsWith(currentYM);
+    else if (period === 'last-month') periodMatch = item.date.startsWith(lastMonthYM);
+    else if (period === 'selected-date') periodMatch = (item.date === selectedDate);
+    else if (period.startsWith('month:')) periodMatch = item.date.startsWith(period.replace('month:', ''));
+    else periodMatch = isPastFilterOn ? (selectedDate ? item.date <= selectedDate : true) : true;
     
-    const qaMatch = (item.qaList && item.qaList.some(qa => 
-      qa.q.toLowerCase().includes(query) || qa.a.toLowerCase().includes(query)
-    ));
-
+    const qaMatch = (item.qaList && item.qaList.some(qa => qa.q.toLowerCase().includes(query) || qa.a.toLowerCase().includes(query)));
     const matchesQuery = (item.place && item.place.toLowerCase().includes(query)) ||
                          item.tag.toLowerCase().includes(query) ||
                          (item.person && item.person.toLowerCase().includes(query)) ||
@@ -1057,7 +965,6 @@ function renderLogs() {
                          (item.detail && item.detail.toLowerCase().includes(query)) ||
                          qaMatch ||
                          (item.memo && item.memo.toLowerCase().includes(query));
-
     return periodMatch && matchesQuery;
   });
 
@@ -1073,7 +980,6 @@ function renderLogs() {
   });
 
   const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
-
   sortedDates.forEach(date => {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'log-group';
@@ -1084,23 +990,18 @@ function renderLogs() {
     groupDiv.appendChild(header);
 
     const itemsOnDay = grouped[date];
-
     itemsOnDay.forEach((item, index) => {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'log-item';
-      
       const isEditingThis = (item.id === editingInlineLogId);
       const qaList = item.qaList || [];
-      const isFirst = (index === 0);
-      const isLast = (index === itemsOnDay.length - 1);
+      const isFirst = (index === 0), isLast = (index === itemsOnDay.length - 1);
 
       if (isEditingThis) {
         itemDiv.classList.add('is-editing');
         const inlineQaContainerId = `inline-qa-list-${item.id}`;
-        
         itemDiv.innerHTML = `
           <div class="inline-edit-form" id="inline-form-${item.id}">
-            <!-- 右上保存用ヘッダーバー -->
             <div class="inline-top-bar">
               <span class="inline-title-tag">✏️ 記録を編集中</span>
               <div class="inline-top-actions">
@@ -1108,14 +1009,12 @@ function renderLogs() {
                 <button type="button" class="btn-cancel-mini" onclick="cancelInlineEdit()">✕</button>
               </div>
             </div>
-
             <div class="form-row">
               <input type="date" class="edit-date" value="${item.date}">
               <input type="text" class="edit-place" placeholder="場所" value="${escapeHtml(item.place || '')}">
               <input type="text" class="edit-tag" placeholder="タグ" value="${escapeHtml(item.tag || '')}">
               <input type="text" class="edit-person" placeholder="話した人" value="${escapeHtml(item.person || '')}">
             </div>
-
             <span class="input-label">📌 業務内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1130,7 +1029,6 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
-
             <span class="input-label">💡 学習内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1145,7 +1043,6 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
-
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
               <div class="qa-list-container" id="${inlineQaContainerId}">
@@ -1161,7 +1058,6 @@ function renderLogs() {
               </div>
               <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
             </div>
-
             <span class="input-label">📋 メモ</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1176,7 +1072,6 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
-
             <div class="inline-btn-group">
               <button type="button" class="btn-save-inline" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
               <button type="button" class="btn-cancel-inline" onclick="cancelInlineEdit()">キャンセル</button>
@@ -1201,17 +1096,8 @@ function renderLogs() {
               <button class="btn-del" onclick="deleteLog(${item.id})">✕</button>
             </div>
           </div>
-
-          ${item.tasks ? `
-            <div class="log-section-label">📌 業務内容</div>
-            <div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>
-          ` : ''}
-
-          ${item.detail ? `
-            <div class="log-section-label">💡 学習内容</div>
-            <div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>
-          ` : ''}
-
+          ${item.tasks ? `<div class="log-section-label">📌 業務内容</div><div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
+          ${item.detail ? `<div class="log-section-label">💡 学習内容</div><div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
           ${qaList.length > 0 ? `
             <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
             <div class="log-qa-group">
@@ -1223,17 +1109,11 @@ function renderLogs() {
               `).join('')}
             </div>
           ` : ''}
-
-          ${item.memo ? `
-            <div class="log-section-label">📋 メモ</div>
-            <div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>
-          ` : ''}
+          ${item.memo ? `<div class="log-section-label">📋 メモ</div><div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
         `;
       }
-
       groupDiv.appendChild(itemDiv);
     });
-
     container.appendChild(groupDiv);
   });
 }
@@ -1242,16 +1122,11 @@ function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
-/* --- クラウド同期 --- */
 function openSettingsModal() {
   document.getElementById('gas-url-input').value = localStorage.getItem(GAS_URL_KEY) || "";
   document.getElementById('settings-modal').classList.remove('hidden');
 }
-
-function closeSettingsModal() {
-  document.getElementById('settings-modal').classList.add('hidden');
-}
-
+function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
 function saveGasUrlSetting() {
   const url = document.getElementById('gas-url-input').value.trim();
   localStorage.setItem(GAS_URL_KEY, url);
@@ -1264,11 +1139,9 @@ async function pushToCloud(showAlert = false) {
   if (!url) return;
   const indicator = document.getElementById('sync-status-indicator');
   indicator.innerText = "☁️ クラウドに保存中...";
-
   try {
     await fetch(url, {
-      method: "POST",
-      mode: "no-cors",
+      method: "POST", mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify(logs)
     });
@@ -1282,17 +1155,12 @@ async function pushToCloud(showAlert = false) {
 
 async function syncWithCloud(silent = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
-  if (!url) {
-    if (!silent) openSettingsModal();
-    return;
-  }
+  if (!url) { if (!silent) openSettingsModal(); return; }
   const indicator = document.getElementById('sync-status-indicator');
   indicator.innerText = "🔄 クラウドと同期中...";
-
   try {
     const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
     const cloudData = await res.json();
-
     if (Array.isArray(cloudData) && cloudData.length > 0) {
       logs = cloudData;
       saveLogs(false);
@@ -1322,8 +1190,7 @@ function exportJSON() {
 
 function importJSON() {
   const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
+  input.type = 'file'; input.accept = '.json';
   input.onchange = e => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1332,14 +1199,10 @@ function importJSON() {
       try {
         const imported = JSON.parse(event.target.result);
         if (Array.isArray(imported)) {
-          logs = imported;
-          saveLogs(true);
-          onDateChanged();
+          logs = imported; saveLogs(true); onDateChanged();
           alert('復元が完了しました！');
         }
-      } catch (err) {
-        alert('ファイルの読み込みに失敗しました');
-      }
+      } catch (err) { alert('ファイルの読み込みに失敗しました'); }
     };
     reader.readAsText(file);
   };
