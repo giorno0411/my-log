@@ -164,6 +164,23 @@
   }
   input:focus, select:focus { border-color: var(--primary); }
 
+  /* 日付入力欄のカレンダーアイコンを明るく見やすく調整 */
+  input[type="date"] {
+    color-scheme: dark;
+    cursor: pointer;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.9) brightness(1.2);
+    cursor: pointer;
+    opacity: 0.9;
+    padding: 2px;
+    transition: opacity 0.2s;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+    filter: invert(1) brightness(1.4);
+  }
+
   .qa-box {
     background: #131d2e;
     border: 1px dashed var(--card-border);
