@@ -112,13 +112,13 @@
     max-width: 100%;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* Firefoxの余計なスクロールバーを非表示 */
+    scrollbar-width: none;
   }
   .rich-toolbar::-webkit-scrollbar {
-    display: none; /* Chrome/Safariのスクロールバーを非表示にしてすっきり */
+    display: none;
   }
   .rich-btn {
-    flex-shrink: 0; /* 画面幅が狭くてもボタンが縮まない */
+    flex-shrink: 0;
     background: #1e293b;
     color: #e2e8f0;
     border: 1px solid #334155;
@@ -129,7 +129,6 @@
     font-weight: bold;
     user-select: none;
   }
-  /* 一番右の「解除」ボタンの右側に適度な余白を確保 */
   .rich-btn:last-child {
     margin-right: 4px;
   }
@@ -189,7 +188,7 @@
   }
   input:focus, select:focus { border-color: var(--primary); }
 
-  /* 日付入力欄：画面外への突っ切りを防止し、明るいカレンダーアイコンを表示 */
+  /* 日付入力欄：確実に開くようピッカー機能を維持しつつ、アイコンを白く明瞭化 */
   input[type="date"] {
     color-scheme: dark;
     cursor: pointer;
@@ -197,21 +196,17 @@
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
-    padding-right: 36px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2338bdf8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' /%3E%3Ccircle cx='8.5' cy='15.5' r='1' fill='%23ffffff' /%3E%3Ccircle cx='12' cy='15.5' r='1' fill='%23ffffff' /%3E%3Ccircle cx='15.5' cy='15.5' r='1' fill='%23ffffff' /%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 18px 18px;
-    -webkit-appearance: none;
-    appearance: none;
+    padding: 8px 10px;
   }
-  /* WebKitブラウザのカレンダーピッカー領域を右端に収めて透明化 */
   input[type="date"]::-webkit-calendar-picker-indicator {
-    opacity: 0;
     cursor: pointer;
-    width: 24px;
-    height: 100%;
-    margin-right: -10px;
+    filter: invert(1) brightness(1.2);
+    opacity: 0.9;
+    padding: 2px;
+    transition: opacity 0.2s;
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
   }
 
   .qa-box {
@@ -553,7 +548,7 @@
 
   <div class="card">
     <div class="form-row">
-      <input type="date" id="input-date" onchange="onDateChanged()">
+      <input type="date" id="input-date" onchange="onDateChanged()" onclick="try { this.showPicker(); } catch(e) {}">
       <input type="text" id="input-place" placeholder="場所 (例: 社内)">
       <input type="text" id="input-tag" placeholder="タグ (例: 見積)">
       <input type="text" id="input-person" placeholder="🗣️ 話した人">
@@ -1070,7 +1065,7 @@ function renderLogs() {
               </div>
             </div>
             <div class="form-row">
-              <input type="date" class="edit-date" value="${item.date}">
+              <input type="date" class="edit-date" value="${item.date}" onclick="try { this.showPicker(); } catch(e) {}">
               <input type="text" class="edit-place" placeholder="場所" value="${escapeHtml(item.place || '')}">
               <input type="text" class="edit-tag" placeholder="タグ" value="${escapeHtml(item.tag || '')}">
               <input type="text" class="edit-person" placeholder="話した人" value="${escapeHtml(item.person || '')}">
