@@ -20,10 +20,14 @@
     --answer-color: #10b981;
     --gray-badge: #64748b;
     --danger: #ef4444;
+    --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
   }
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+    font-family: var(--font-stack);
+  }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--font-stack);
     background-color: var(--bg-color);
     color: var(--text-main);
     margin: 0;
@@ -61,6 +65,7 @@
     cursor: pointer;
     transition: opacity 0.2s;
     color: #fff;
+    font-family: inherit;
   }
   .btn-header:hover { opacity: 0.85; }
   .btn-pdf { background: #0ea5e9; }
@@ -77,7 +82,7 @@
     overflow: hidden;
   }
   
-  /* 入力欄グリッド：スマホでははみ出しを防ぎつつ自然に整列 */
+  /* 入力欄グリッド：スマホでははみ出しを防ぎつつスッキリ配置 */
   .form-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -96,7 +101,7 @@
     align-items: center;
   }
 
-  /* ツールバー：はみ出し防止とスマホ横スクロール・余白の最適化 */
+  /* ツールバー：スマホ横スクロール＆右端「解除」のはみ出し防止 */
   .rich-toolbar {
     display: flex;
     gap: 3px;
@@ -128,6 +133,7 @@
     cursor: pointer;
     font-weight: bold;
     user-select: none;
+    font-family: inherit;
   }
   .rich-btn:last-child {
     margin-right: 4px;
@@ -139,6 +145,7 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
+  /* リッチエディタ：業務内容等の入力フォントを完全に統一 */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -148,7 +155,7 @@
     padding: 8px 10px;
     font-size: 13px;
     outline: none;
-    font-family: inherit;
+    font-family: var(--font-stack) !important;
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
@@ -158,6 +165,9 @@
     word-break: break-word;
     resize: vertical;
     overflow: auto;
+  }
+  .rich-editor * {
+    font-family: var(--font-stack) !important;
   }
   .rich-editor div, .rich-editor p {
     margin: 0 !important;
@@ -170,6 +180,7 @@
     color: #64748b;
     pointer-events: none;
     display: block;
+    font-family: var(--font-stack) !important;
   }
 
   input[type="text"], select {
@@ -180,7 +191,7 @@
     padding: 8px 10px;
     font-size: 13px;
     outline: none;
-    font-family: inherit;
+    font-family: var(--font-stack);
     width: 100%;
     max-width: 100%;
     min-width: 0;
@@ -188,7 +199,7 @@
   }
   input:focus, select:focus { border-color: var(--primary); }
 
-  /* 確実に開く＆白アイコン＆スマホはみ出しゼロのカスタム日付ピッカーラッパー */
+  /* 日付入力欄：画面内フィット・白カレンダーアイコン・確実なタップ起動 */
   .date-input-wrap {
     position: relative;
     width: 100%;
@@ -214,6 +225,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     user-select: none;
+    font-family: var(--font-stack);
   }
   .date-calendar-icon {
     width: 18px;
@@ -229,7 +241,6 @@
     height: 100%;
     stroke: #38bdf8;
   }
-  /* 透明なinput[type="date"]を全体に重ねてタップを100%拾う */
   .date-native-input {
     position: absolute;
     top: 0;
@@ -251,7 +262,7 @@
     padding: 10px;
     margin-bottom: 12px;
   }
-  .qa-select { padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto; }
+  .qa-select { padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto; font-family: inherit; }
   .qa-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   .qa-item-card {
     background: #0f172a;
@@ -264,7 +275,7 @@
     gap: 4px;
   }
   .qa-item-card .rich-editor { margin-bottom: 4px; min-height: 42px; border-top: 1px solid var(--card-border); border-radius: 6px; }
-  .sub-label { font-size: 11px; font-weight: bold; }
+  .sub-label { font-size: 11px; font-weight: bold; font-family: inherit; }
   .btn-qa-del {
     position: absolute;
     top: 4px;
@@ -275,6 +286,7 @@
     cursor: pointer;
     font-size: 14px;
     padding: 2px 6px;
+    font-family: inherit;
   }
   .btn-qa-del:hover { color: var(--danger); }
   .btn-add-qa {
@@ -287,9 +299,10 @@
     cursor: pointer;
     margin-top: 6px;
     align-self: flex-start;
+    font-family: inherit;
   }
 
-  .form-status { font-size: 12px; color: #38bdf8; margin-bottom: 8px; min-height: 16px; }
+  .form-status { font-size: 12px; color: #38bdf8; margin-bottom: 8px; min-height: 16px; font-family: inherit; }
   
   .btn-group { display: flex; gap: 8px; }
   .btn-submit {
@@ -302,6 +315,7 @@
     font-size: 13px;
     font-weight: bold;
     cursor: pointer;
+    font-family: inherit;
   }
   .btn-submit:hover { background: var(--primary-hover); }
   .btn-new {
@@ -313,6 +327,7 @@
     border-radius: 6px;
     font-size: 12px;
     cursor: pointer;
+    font-family: inherit;
   }
 
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
@@ -329,6 +344,7 @@
     border: 1px solid #334155;
     flex-wrap: wrap;
     gap: 4px;
+    font-family: inherit;
   }
   .toggle-filter-label {
     display: flex;
@@ -338,6 +354,7 @@
     font-weight: bold;
     color: #cbd5e1;
     white-space: nowrap;
+    font-family: inherit;
   }
   .toggle-filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
@@ -350,6 +367,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    font-family: inherit;
   }
   .log-date-header::after { content: ""; flex: 1; height: 1px; background: var(--card-border); }
   .log-item {
@@ -381,6 +399,7 @@
     border-radius: 4px;
     cursor: pointer;
     font-weight: bold;
+    font-family: inherit;
   }
   .btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
   
@@ -388,12 +407,16 @@
   .log-tag { background: #334155; color: #38bdf8; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   
-  .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
+  .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; font-family: inherit; }
   
   .log-tasks, .log-detail, .log-memo, .qa-q, .qa-a {
     font-size: 13px;
     line-height: 1.4 !important;
     word-break: break-word;
+    font-family: var(--font-stack) !important;
+  }
+  .log-tasks *, .log-detail *, .log-memo *, .qa-q *, .qa-a * {
+    font-family: var(--font-stack) !important;
   }
   .log-tasks div, .log-tasks p,
   .log-detail div, .log-detail p,
@@ -436,8 +459,8 @@
     border-left: 3px solid var(--gray-badge);
   }
   
-  .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-  .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
+  .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: inherit; }
+  .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; font-family: inherit; }
   .btn-del:hover { color: var(--danger); }
 
   .inline-top-bar {
@@ -448,7 +471,7 @@
     padding-bottom: 6px;
     border-bottom: 1px dashed var(--card-border);
   }
-  .inline-title-tag { font-size: 12px; font-weight: bold; color: var(--primary); }
+  .inline-title-tag { font-size: 12px; font-weight: bold; color: var(--primary); font-family: inherit; }
   .inline-top-actions { display: flex; gap: 6px; }
   .btn-save-mini {
     background: var(--accent);
@@ -459,6 +482,7 @@
     font-size: 12px;
     font-weight: bold;
     cursor: pointer;
+    font-family: inherit;
   }
   .btn-cancel-mini {
     background: #334155;
@@ -468,6 +492,7 @@
     border-radius: 4px;
     font-size: 12px;
     cursor: pointer;
+    font-family: inherit;
   }
 
   .inline-btn-group { display: flex; gap: 8px; margin-top: 8px; }
@@ -481,6 +506,7 @@
     font-size: 13px;
     font-weight: bold;
     cursor: pointer;
+    font-family: inherit;
   }
   .btn-cancel-inline {
     flex: 1;
@@ -491,6 +517,7 @@
     border-radius: 6px;
     font-size: 13px;
     cursor: pointer;
+    font-family: inherit;
   }
 
   .modal-overlay {
@@ -511,7 +538,7 @@
     max-width: 500px;
     padding: 20px;
   }
-  .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; font-family: inherit; }
   .modal-close { background: none; border: none; color: var(--text-sub); font-size: 18px; cursor: pointer; }
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
@@ -526,11 +553,12 @@
     border-top: 1px solid var(--card-border);
     font-size: 12px;
     color: var(--text-sub);
+    font-family: inherit;
   }
-  .footer-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; text-decoration: underline; padding: 0; }
+  .footer-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; text-decoration: underline; padding: 0; font-family: inherit; }
   .hidden { display: none; }
 
-  /* スマホ・中画面（幅360px〜599px）：2列グリッドでコンパクトに配置 */
+  /* スマホ・中画面（幅360px〜599px）：2列グリッドで配置 */
   @media (min-width: 360px) and (max-width: 599px) {
     .form-row {
       grid-template-columns: repeat(2, 1fr);
@@ -583,7 +611,6 @@
 
   <div class="card">
     <div class="form-row">
-      <!-- 画面外はみ出しゼロ＆鮮やかな白青アイコンで100%起動する日付ラッパー -->
       <div class="date-input-wrap" id="date-input-wrap">
         <span class="date-display-text" id="date-display-text">日付を選択</span>
         <div class="date-calendar-icon">
@@ -594,7 +621,7 @@
             <line x1="3" y1="10" x2="21" y2="10"></line>
             <circle cx="8" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
             <circle cx="12" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-            <circle cx="16" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
+            <circle cx="15.5" cy="15.5" r="1" fill="#ffffff" stroke="none"></circle>
           </svg>
         </div>
         <input type="date" id="input-date" class="date-native-input" onchange="onDateChanged()">
@@ -1147,7 +1174,7 @@ function renderLogs() {
                     <line x1="3" y1="10" x2="21" y2="10"></line>
                     <circle cx="8" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
                     <circle cx="12" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-                    <circle cx="16" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
+                    <circle cx="15.5" cy="15.5" r="1" fill="#ffffff" stroke="none"></circle>
                   </svg>
                 </div>
                 <input type="date" class="edit-date date-native-input" value="${item.date}" onchange="updateInlineDateDisplay(${item.id})">
