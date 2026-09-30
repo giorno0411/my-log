@@ -77,7 +77,6 @@
     overflow: hidden;
   }
   
-  /* 入力欄グリッド：スマホでははみ出しを防ぎつつスッキリ配置 */
   .form-row {
     display: grid;
     grid-template-columns: 1fr;
@@ -96,7 +95,6 @@
     align-items: center;
   }
 
-  /* ツールバー：スマホ横スクロール＆右端「解除」のはみ出し防止 */
   .rich-toolbar {
     display: flex;
     gap: 3px;
@@ -139,7 +137,6 @@
   .color-blue { color: #60a5fa !important; }
   .color-marker { background: #854d0e; color: #fef08a; border-color: #a16207; }
 
-  /* リッチエディタ：初期のオリジナル設定に完全復元 */
   .rich-editor {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -155,7 +152,7 @@
     box-sizing: border-box;
     min-height: 60px;
     line-height: 1.4;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     word-break: break-word;
     resize: vertical;
     overflow: auto;
@@ -173,6 +170,56 @@
     display: block;
   }
 
+  /* 添付PDF操作エリア */
+  .attach-control-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .btn-attach-pdf {
+    background: #1e293b;
+    color: #38bdf8;
+    border: 1px dashed #38bdf8;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-attach-pdf:hover { background: #334155; }
+  .attach-file-tag {
+    background: #0f172a;
+    border: 1px solid var(--primary);
+    color: #93c5fd;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+  }
+  .attach-file-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 180px;
+  }
+  .attach-del-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+  }
+  .attach-del-btn:hover { color: var(--danger); }
+
   input[type="text"], select {
     background: #0f172a;
     border: 1px solid var(--card-border);
@@ -189,7 +236,6 @@
   }
   input:focus, select:focus { border-color: var(--primary); }
 
-  /* 日付入力欄：初期と同じinheritフォントで自然に描画 */
   .date-input-wrap {
     position: relative;
     width: 100%;
@@ -291,7 +337,7 @@
     font-family: inherit;
   }
 
-  .form-status { font-size: 12px; color: #38bdf8; margin-bottom: 8px; min-height: 16px; }
+  .form-status { font-size: 12px; color: #38bdf8; margin-bottom: 8px; min-height: 16px; font-family: inherit; }
   
   .btn-group { display: flex; gap: 8px; }
   .btn-submit {
@@ -439,6 +485,27 @@
     border-radius: 6px;
     border-left: 3px solid var(--gray-badge);
   }
+
+  /* 閲覧カード上のPDF添付チップ */
+  .log-pdf-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #1e293b;
+    border: 1px solid #0284c7;
+    color: #38bdf8;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+  }
+  .log-pdf-badge:hover {
+    background: #0284c7;
+    color: #ffffff;
+  }
   
   .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
@@ -500,7 +567,7 @@
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.75);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -520,6 +587,27 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
+  /* PDFその場閲覧用モーダル */
+  .pdf-modal-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 860px;
+    height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+  .pdf-viewer-frame {
+    width: 100%;
+    flex: 1;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: #fff;
+    margin-top: 8px;
+  }
+
   .footer-actions {
     display: flex;
     flex-direction: column;
@@ -532,16 +620,12 @@
     color: var(--text-sub);
   }
   .footer-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; text-decoration: underline; padding: 0; }
-  .hidden { display: none; }
+  .hidden { display: none !important; }
 
-  /* スマホ・中画面（幅360px〜599px）：2列グリッドで配置 */
   @media (min-width: 360px) and (max-width: 599px) {
-    .form-row {
-      grid-template-columns: repeat(2, 1fr);
-    }
+    .form-row { grid-template-columns: repeat(2, 1fr); }
   }
 
-  /* 画面幅600px以上のPC・タブレット表示 */
   @media (min-width: 600px) {
     body { padding: 20px; }
     .form-row { grid-template-columns: repeat(4, 1fr); }
@@ -555,7 +639,7 @@
     body { background-color: #ffffff !important; color: #000000 !important; padding: 0; }
     .container { max-width: 100%; }
     header h1 { font-size: 20px; color: #000; }
-    .header-actions, .card, .filter-section, .footer-actions, .item-actions, .modal-overlay { display: none !important; }
+    .header-actions, .card, .filter-section, .footer-actions, .item-actions, .modal-overlay, .attach-control-area { display: none !important; }
     .log-group { margin-bottom: 20px; page-break-inside: avoid; }
     .log-date-header { color: #000; font-size: 15px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
     .log-date-header::after { display: none; }
@@ -570,6 +654,7 @@
     .qa-q { color: #be123c !important; }
     .qa-a { color: #047857 !important; }
     .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
+    .log-pdf-badge { color: #0284c7 !important; border: 1px solid #ccc !important; background: #fff !important; }
   }
 </style>
 </head>
@@ -608,6 +693,7 @@
       <input type="text" id="input-person" placeholder="🗣️ 話した人">
     </div>
     
+    <!-- 📌 業務内容 -->
     <span class="input-label">📌 業務内容</span>
     <div class="rich-toolbar">
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -622,7 +708,15 @@
       <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
     <div id="input-tasks" class="rich-editor" contenteditable="true" placeholder="業務内容を入力..."></div>
+    <div class="attach-control-area">
+      <label class="btn-attach-pdf">
+        📎 PDF添付
+        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'tasks')">
+      </label>
+      <div id="new-tasks-pdf-preview"></div>
+    </div>
     
+    <!-- 💡 学習内容 -->
     <span class="input-label">💡 学習内容</span>
     <div class="rich-toolbar">
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -637,7 +731,15 @@
       <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
     <div id="input-detail" class="rich-editor" contenteditable="true" placeholder="学習内容を入力..."></div>
+    <div class="attach-control-area">
+      <label class="btn-attach-pdf">
+        📎 PDF添付
+        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'detail')">
+      </label>
+      <div id="new-detail-pdf-preview"></div>
+    </div>
 
+    <!-- ❓ 疑問点 -->
     <div class="qa-box">
       <div class="input-label">
         <span>❓ 学習時の疑問点・質問</span>
@@ -652,6 +754,7 @@
       </div>
     </div>
 
+    <!-- 📋 メモ -->
     <span class="input-label">📋 メモ</span>
     <div class="rich-toolbar">
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -666,6 +769,13 @@
       <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
     <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
+    <div class="attach-control-area">
+      <label class="btn-attach-pdf">
+        📎 PDF添付
+        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'memo')">
+      </label>
+      <div id="new-memo-pdf-preview"></div>
+    </div>
     
     <div class="form-status" id="form-status"></div>
     <div class="btn-group">
@@ -706,6 +816,7 @@
   </div>
 </div>
 
+<!-- 設定モーダル -->
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-card">
     <div class="modal-title">
@@ -723,12 +834,28 @@
   </div>
 </div>
 
+<!-- PDFその場閲覧モーダル -->
+<div class="modal-overlay hidden" id="pdf-view-modal">
+  <div class="pdf-modal-card">
+    <div class="modal-title">
+      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85%;">📄 PDFプレビュー</span>
+      <button class="modal-close" onclick="closePdfViewModal()">✕</button>
+    </div>
+    <iframe id="pdf-viewer-frame" class="pdf-viewer-frame" src=""></iframe>
+  </div>
+</div>
+
 <script>
 const STORAGE_KEY = "daily_work_learning_logs_main";
 const GAS_URL_KEY = "daily_work_learning_gas_url";
 let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+
+// 新規作成用の添付PDF保持変数
+let newPdfs = { tasks: null, detail: null, memo: null };
+// インライン編集用の一時PDF保持変数
+let inlinePdfs = { tasks: null, detail: null, memo: null };
 
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
@@ -789,6 +916,130 @@ function cleanAndFormatLegacyText(content) {
   return html;
 }
 
+/* PDF添付のハンドリング (Base64化) */
+function handlePdfUpload(e, mode, field) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type !== "application/pdf") {
+    alert("PDFファイルのみ添付できます。");
+    return;
+  }
+  if (file.size > 3.5 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。3.5MB以下のPDFを添付してください。");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const pdfObj = {
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + " KB",
+      data: evt.target.result
+    };
+
+    if (mode === 'new') {
+      newPdfs[field] = pdfObj;
+      renderPdfAttachPreview('new', field);
+    } else {
+      inlinePdfs[field] = pdfObj;
+      renderPdfAttachPreview('inline', field, mode);
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function removeAttachedPdf(mode, field, logId = null) {
+  if (mode === 'new') {
+    newPdfs[field] = null;
+    renderPdfAttachPreview('new', field);
+  } else {
+    inlinePdfs[field] = null;
+    renderPdfAttachPreview('inline', field, logId);
+  }
+}
+
+function renderPdfAttachPreview(mode, field, logId = null) {
+  const containerId = mode === 'new' ? `new-${field}-pdf-preview` : `inline-${field}-pdf-preview-${logId}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const pdf = mode === 'new' ? newPdfs[field] : inlinePdfs[field];
+  if (!pdf) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = `
+    <span class="attach-file-tag">
+      📄 <span class="attach-file-name" title="${escapeHtml(pdf.name)}">${escapeHtml(pdf.name)} (${pdf.size})</span>
+      <button type="button" class="attach-del-btn" onclick="removeAttachedPdf('${mode}', '${field}', ${logId})" title="削除">✕</button>
+    </span>
+  `;
+}
+
+/* Q&A用PDF添付のハンドリング */
+function handleQaPdfUpload(e, cardEl) {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.type !== "application/pdf") {
+    alert("PDFファイルのみ添付できます。");
+    return;
+  }
+  if (file.size > 3.5 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。3.5MB以下のPDFを添付してください。");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const pdfObj = {
+      name: file.name,
+      size: (file.size / 1024).toFixed(1) + " KB",
+      data: evt.target.result
+    };
+    cardEl.dataset.pdfData = JSON.stringify(pdfObj);
+    renderQaPdfPreview(cardEl, pdfObj);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function removeQaAttachedPdf(btn) {
+  const cardEl = btn.closest('.qa-item-card');
+  if (!cardEl) return;
+  cardEl.dataset.pdfData = "";
+  const previewDiv = cardEl.querySelector('.qa-pdf-preview');
+  if (previewDiv) previewDiv.innerHTML = "";
+}
+
+function renderQaPdfPreview(cardEl, pdfObj) {
+  const previewDiv = cardEl.querySelector('.qa-pdf-preview');
+  if (!previewDiv) return;
+  if (!pdfObj) {
+    previewDiv.innerHTML = "";
+    return;
+  }
+  previewDiv.innerHTML = `
+    <span class="attach-file-tag">
+      📄 <span class="attach-file-name" title="${escapeHtml(pdfObj.name)}">${escapeHtml(pdfObj.name)} (${pdfObj.size})</span>
+      <button type="button" class="attach-del-btn" onclick="removeQaAttachedPdf(this)" title="削除">✕</button>
+    </span>
+  `;
+}
+
+/* モーダルでPDFを開く */
+function openPdfViewModal(name, dataUri) {
+  document.getElementById('pdf-modal-title').innerText = `📄 ${name}`;
+  document.getElementById('pdf-viewer-frame').src = dataUri;
+  document.getElementById('pdf-view-modal').classList.remove('hidden');
+}
+
+function closePdfViewModal() {
+  document.getElementById('pdf-viewer-frame').src = "";
+  document.getElementById('pdf-view-modal').classList.add('hidden');
+}
+
 window.onload = function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
@@ -844,19 +1095,30 @@ function onQuestionSelectChanged() {
   }
 }
 
-function addQaInputRow(qVal = "", aVal = "") {
+function addQaInputRow(qVal = "", aVal = "", pdfObj = null) {
   const container = document.getElementById('qa-list-container');
   const itemDiv = document.createElement('div');
   itemDiv.className = 'qa-item-card';
+  if (pdfObj) {
+    itemDiv.dataset.pdfData = JSON.stringify(pdfObj);
+  }
   itemDiv.innerHTML = `
     <button type="button" class="btn-qa-del" onclick="removeQaInputRow(this)">✕</button>
     <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
     <div class="rich-editor qa-input-q" contenteditable="true">${qVal}</div>
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
+    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+      <label class="btn-attach-pdf">
+        📎 PDF添付
+        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
+      </label>
+      <div class="qa-pdf-preview"></div>
+    </div>
   `;
   container.appendChild(itemDiv);
   itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+  if (pdfObj) renderQaPdfPreview(itemDiv, pdfObj);
 }
 
 function removeQaInputRow(btn) {
@@ -900,6 +1162,12 @@ function resetFormForNew() {
   document.getElementById('qa-list-container').innerHTML = '';
   document.getElementById('qa-inputs-area').classList.add('hidden');
   document.getElementById('input-memo').innerHTML = '';
+  
+  newPdfs = { tasks: null, detail: null, memo: null };
+  renderPdfAttachPreview('new', 'tasks');
+  renderPdfAttachPreview('new', 'detail');
+  renderPdfAttachPreview('new', 'memo');
+
   const selectedDate = document.getElementById('input-date').value;
   updateDateDisplay('input-date', 'date-display-text');
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加中`;
@@ -931,13 +1199,17 @@ function saveNewLog() {
     cards.forEach(card => {
       const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
       const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
-      if (q || a) qaList.push({ q, a });
+      let pdf = null;
+      if (card.dataset.pdfData) {
+        try { pdf = JSON.parse(card.dataset.pdfData); } catch(err) { pdf = null; }
+      }
+      if (q || a || pdf) qaList.push({ q, a, pdf });
     });
   }
 
   const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
   const emptyRegex = /^(<br>|\s)*$/;
-  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo)) {
+  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !newPdfs.tasks && !newPdfs.detail && !newPdfs.memo) {
     return alert('項目を入力してください');
   }
 
@@ -948,9 +1220,12 @@ function saveNewLog() {
     tag: tag,
     person: person,
     tasks: emptyRegex.test(tasks) ? "" : tasks,
+    tasksPdf: newPdfs.tasks || null,
     detail: emptyRegex.test(detail) ? "" : detail,
+    detailPdf: newPdfs.detail || null,
     qaList: qaList,
-    memo: emptyRegex.test(memo) ? "" : memo
+    memo: emptyRegex.test(memo) ? "" : memo,
+    memoPdf: newPdfs.memo || null
   };
 
   logs.unshift(newLog);
@@ -980,13 +1255,37 @@ function moveLogOrder(id, date, direction) {
 
 function startInlineEdit(id) {
   editingInlineLogId = id;
+  const item = logs.find(it => it.id === id);
+  if (item) {
+    inlinePdfs = {
+      tasks: item.tasksPdf || null,
+      detail: item.detailPdf || null,
+      memo: item.memoPdf || null
+    };
+  }
   renderLogs();
   const form = document.getElementById(`inline-form-${id}`);
-  if (form) form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+  if (form) {
+    form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+    renderPdfAttachPreview('inline', 'tasks', id);
+    renderPdfAttachPreview('inline', 'detail', id);
+    renderPdfAttachPreview('inline', 'memo', id);
+
+    // インラインQ&Aの既存添付PDFプレビュー復元
+    form.querySelectorAll('.qa-item-card').forEach(cardEl => {
+      if (cardEl.dataset.pdfData) {
+        try {
+          const pdfObj = JSON.parse(cardEl.dataset.pdfData);
+          renderQaPdfPreview(cardEl, pdfObj);
+        } catch(err) {}
+      }
+    });
+  }
 }
 
 function cancelInlineEdit() {
   editingInlineLogId = null;
+  inlinePdfs = { tasks: null, detail: null, memo: null };
   renderLogs();
 }
 
@@ -1001,6 +1300,13 @@ function addInlineQaRow(containerId) {
     <div class="rich-editor inline-qa-q" contenteditable="true"></div>
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor inline-qa-a" contenteditable="true"></div>
+    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+      <label class="btn-attach-pdf">
+        📎 PDF添付
+        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
+      </label>
+      <div class="qa-pdf-preview"></div>
+    </div>
   `;
   container.appendChild(itemDiv);
   itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
@@ -1035,7 +1341,11 @@ function saveInlineEdit(id) {
   qaCards.forEach(card => {
     const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
     const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
-    if (q || a) qaList.push({ q, a });
+    let pdf = null;
+    if (card.dataset.pdfData) {
+      try { pdf = JSON.parse(card.dataset.pdfData); } catch(err) { pdf = null; }
+    }
+    if (q || a || pdf) qaList.push({ q, a, pdf });
   });
 
   logs[idx] = {
@@ -1045,12 +1355,16 @@ function saveInlineEdit(id) {
     tag: tag,
     person: person,
     tasks: tasks,
+    tasksPdf: inlinePdfs.tasks || null,
     detail: detail,
+    detailPdf: inlinePdfs.detail || null,
     qaList: qaList,
-    memo: memo
+    memo: memo,
+    memoPdf: inlinePdfs.memo || null
   };
 
   editingInlineLogId = null;
+  inlinePdfs = { tasks: null, detail: null, memo: null };
   saveLogs(true);
 }
 
@@ -1159,6 +1473,8 @@ function renderLogs() {
               <input type="text" class="edit-tag" placeholder="タグ" value="${escapeHtml(item.tag || '')}">
               <input type="text" class="edit-person" placeholder="話した人" value="${escapeHtml(item.person || '')}">
             </div>
+
+            <!-- 業務内容編集 -->
             <span class="input-label">📌 業務内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1173,6 +1489,15 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
+            <div class="attach-control-area">
+              <label class="btn-attach-pdf">
+                📎 PDF添付
+                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'tasks')">
+              </label>
+              <div id="inline-tasks-pdf-preview-${item.id}"></div>
+            </div>
+
+            <!-- 学習内容編集 -->
             <span class="input-label">💡 学習内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1187,21 +1512,39 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
+            <div class="attach-control-area">
+              <label class="btn-attach-pdf">
+                📎 PDF添付
+                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'detail')">
+              </label>
+              <div id="inline-detail-pdf-preview-${item.id}"></div>
+            </div>
+
+            <!-- Q&A編集 (各項目PDF添付対応) -->
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
               <div class="qa-list-container" id="${inlineQaContainerId}">
                 ${qaList.map(qa => `
-                  <div class="qa-item-card">
+                  <div class="qa-item-card" data-pdf-data='${qa.pdf ? escapeHtml(JSON.stringify(qa.pdf)) : ""}'>
                     <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
                     <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
                     <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
                     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
                     <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
+                    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+                      <label class="btn-attach-pdf">
+                        📎 PDF添付
+                        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
+                      </label>
+                      <div class="qa-pdf-preview"></div>
+                    </div>
                   </div>
                 `).join('')}
               </div>
               <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
             </div>
+
+            <!-- メモ編集 -->
             <span class="input-label">📋 メモ</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -1216,6 +1559,14 @@ function renderLogs() {
               <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
             </div>
             <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
+            <div class="attach-control-area">
+              <label class="btn-attach-pdf">
+                📎 PDF添付
+                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'memo')">
+              </label>
+              <div id="inline-memo-pdf-preview-${item.id}"></div>
+            </div>
+
             <div class="inline-btn-group">
               <button type="button" class="btn-save-inline" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
               <button type="button" class="btn-cancel-inline" onclick="cancelInlineEdit()">キャンセル</button>
@@ -1240,8 +1591,31 @@ function renderLogs() {
               <button class="btn-del" onclick="deleteLog(${item.id})">✕</button>
             </div>
           </div>
-          ${item.tasks ? `<div class="log-section-label">📌 業務内容</div><div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
-          ${item.detail ? `<div class="log-section-label">💡 学習内容</div><div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
+
+          ${item.tasks || item.tasksPdf ? `
+            <div class="log-section-label">📌 業務内容</div>
+            ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
+            ${item.tasksPdf ? `
+              <div>
+                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.tasksPdf.name)}", "${item.tasksPdf.data}")'>
+                  📄 ${escapeHtml(item.tasksPdf.name)} (${item.tasksPdf.size})
+                </button>
+              </div>
+            ` : ''}
+          ` : ''}
+
+          ${item.detail || item.detailPdf ? `
+            <div class="log-section-label">💡 学習内容</div>
+            ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
+            ${item.detailPdf ? `
+              <div>
+                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.detailPdf.name)}", "${item.detailPdf.data}")'>
+                  📄 ${escapeHtml(item.detailPdf.name)} (${item.detailPdf.size})
+                </button>
+              </div>
+            ` : ''}
+          ` : ''}
+
           ${qaList.length > 0 ? `
             <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
             <div class="log-qa-group">
@@ -1249,11 +1623,29 @@ function renderLogs() {
                 <div class="log-qa-single">
                   ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
                   ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
+                  ${qa.pdf ? `
+                    <div style="margin-top:4px;">
+                      <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(qa.pdf.name)}", "${qa.pdf.data}")'>
+                        📄 ${escapeHtml(qa.pdf.name)} (${qa.pdf.size})
+                      </button>
+                    </div>
+                  ` : ''}
                 </div>
               `).join('')}
             </div>
           ` : ''}
-          ${item.memo ? `<div class="log-section-label">📋 メモ</div><div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
+
+          ${item.memo || item.memoPdf ? `
+            <div class="log-section-label">📋 メモ</div>
+            ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
+            ${item.memoPdf ? `
+              <div>
+                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.memoPdf.name)}", "${item.memoPdf.data}")'>
+                  📄 ${escapeHtml(item.memoPdf.name)} (${item.memoPdf.size})
+                </button>
+              </div>
+            ` : ''}
+          ` : ''}
         `;
       }
       groupDiv.appendChild(itemDiv);
