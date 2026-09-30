@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>日報・学習記録ノート</title>
+<!-- PDF描画ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -585,7 +587,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 12px;
+    padding: 8px;
     z-index: 1000;
   }
   .modal-card {
@@ -601,18 +603,18 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビュー用モーダル（画像は縦横フィット・スクロールなし） */
+  /* プレビュー用モーダル（PDF・画像両対応・画面いっぱいに表示） */
   .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     width: 100%;
-    max-width: 720px;
-    height: 88vh;
-    max-height: 88vh;
+    max-width: 900px;
+    height: 94vh;
+    max-height: 94vh;
     display: flex;
     flex-direction: column;
-    padding: 10px 14px;
+    padding: 8px 12px;
     box-sizing: border-box;
     overflow: hidden;
   }
@@ -620,23 +622,31 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 8px;
+    padding-bottom: 6px;
     border-bottom: 1px solid var(--card-border);
     gap: 6px;
     flex-shrink: 0;
   }
-  .btn-open-external {
-    background: transparent;
-    border: 1px solid #38bdf8;
-    color: #38bdf8;
-    padding: 3px 8px;
+  .pdf-page-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-main);
+  }
+  .btn-page-nav {
+    background: #334155;
+    color: #f8fafc;
+    border: none;
+    padding: 4px 10px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: bold;
     cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
+  }
+  .btn-page-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
   }
   .preview-container {
     flex: 1;
@@ -647,22 +657,29 @@
     justify-content: center;
     background: #090e1a;
     border-radius: 6px;
-    margin-top: 8px;
+    margin-top: 6px;
     overflow: hidden;
     position: relative;
   }
+  /* 画像：枠いっぱいに収容 */
   #modal-preview-image {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     border-radius: 4px;
   }
-  #modal-preview-pdf-frame {
-    width: 100%;
-    height: 100%;
-    border: none;
-    border-radius: 4px;
-    background: #fff;
+  /* PDFキャンバス：画面内スクロールなしで最大表示 */
+  #modal-preview-pdf-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+  .pdf-loading-msg {
+    position: absolute;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: bold;
   }
 
   .footer-actions {
@@ -883,12 +900,12 @@
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-card">
     <div class="modal-title">
-      <span>⚙️️ クラウド同期設定</span>
+      <span>⚙️ クラウド同期設定</span>
       <button class="modal-close" onclick="closeSettingsModal()">✕</button>
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
       Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでテキストデータを同期できます。<br>
-      <span style="color:#38bdf8; font-size:11px;">※容量の大きい添付ファイル本体は端末内（IndexedDB）に安全に完全保存されます。</span>
+      <span style="color:#38bdf8; font-size:11px;">※添付ファイル本体は端末内（IndexedDB）に安全に完全保存されます。</span>
     </p>
     <input type="text" id="gas-url-input" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
     <div class="modal-actions">
@@ -898,19 +915,25 @@
   </div>
 </div>
 
-<!-- スマホ・PC完全対応：プレビュー用モーダル（画像は窓内フィット、PDFはPC窓内またはスマホ別タブ確実起動） -->
+<!-- プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
-      <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:65%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
-      <div style="display:flex; align-items:center; gap:6px;">
-        <a id="btn-external-view" class="btn-open-external" target="_blank" rel="noopener">別窓で開く</a>
-        <button class="modal-close" onclick="closeFilePreviewModal()">✕</button>
+      <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
+      <!-- PDF用ページ送り -->
+      <div id="pdf-page-controls" class="pdf-page-controls hidden">
+        <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
+        <span id="pdf-page-num-display" style="font-weight:bold; min-width:36px; text-align:center;">1 / 1</span>
+        <button type="button" class="btn-page-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
       </div>
+      <button class="modal-close" onclick="closeFilePreviewModal()">✕</button>
     </div>
     <div class="preview-container" id="preview-container">
+      <div class="pdf-loading-msg hidden" id="pdf-loading-msg">読み込み中...</div>
+      <!-- 画像表示用 -->
       <img id="modal-preview-image" class="hidden" alt="プレビュー画像">
-      <iframe id="modal-preview-pdf-frame" class="hidden"></iframe>
+      <!-- PDFスクロールなし・枠内最大フィット表示用Canvas -->
+      <canvas id="modal-preview-pdf-canvas" class="hidden"></canvas>
     </div>
   </div>
 </div>
@@ -924,12 +947,15 @@ let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
-// 新規作成用の添付ファイル配列保持 { tasks: [], detail: [], memo: [] }
+// 新規作成用の添付ファイル配列保持
 let newFiles = { tasks: [], detail: [], memo: [] };
 // インライン編集中レコードの添付ファイル配列保持
 let inlineFileState = { tasks: [], detail: [], memo: [] };
 
-let currentBlobUrl = null;
+// PDF.js 制御用
+let currentPdfDoc = null;
+let currentPdfPage = 1;
+let totalPdfPages = 1;
 
 /* ============================================================
    大容量対応 IndexedDB 永続化エンジン
@@ -1048,6 +1074,17 @@ function b64toBlob(dataURI) {
     ia[i] = byteString.charCodeAt(i);
   }
   return new Blob([ab], { type: mimeString });
+}
+
+function b64toUint8Array(dataURI) {
+  const base64Data = dataURI.split(',')[1];
+  const binaryStr = atob(base64Data);
+  const len = binaryStr.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return bytes;
 }
 
 /* ファイル複数添付ハンドリング */
@@ -1185,7 +1222,7 @@ function renderQaFilesPreview(cardEl, fileList) {
     return;
   }
   previewDiv.innerHTML = fileList.map(file => {
-    const icon = file.type === 'image' ? '🖼️' : '📄';
+    const icon = file.type === 'image' ? '🖼️️' : '📄';
     return `
       <span class="attach-file-tag">
         ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
@@ -1195,60 +1232,133 @@ function renderQaFilesPreview(cardEl, fileList) {
   }).join('');
 }
 
-/* スマホ・PC完全対応：ファイルプレビューモーダル */
-function openFilePreviewModal(name, dataUri, type) {
+/* スマホ・PC完全対応：ファイルプレビュー（画像もPDFも画面いっぱいにスクロールなし表示） */
+async function openFilePreviewModal(name, dataUri, type) {
   const isPdf = (type === 'pdf') || (!type && dataUri.startsWith('data:application/pdf'));
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-  // スマホでPDFの場合は、ブラウザ制限を受けない端末ネイティブのPDFエンジン（別タブ）で即時100%確実に開く
-  if (isPdf && isMobile) {
-    const blob = b64toBlob(dataUri);
-    const blobUrl = URL.createObjectURL(blob);
-    const win = window.open(blobUrl, '_blank');
-    if (!win) {
-      location.href = blobUrl;
-    }
-    return;
-  }
-
-  // 画像またはPC環境でのプレビュー表示
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('preview-modal-title');
-  const extBtn = document.getElementById('btn-external-view');
+  const pageControls = document.getElementById('pdf-page-controls');
   const imgEl = document.getElementById('modal-preview-image');
-  const pdfFrame = document.getElementById('modal-preview-pdf-frame');
-
-  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-  const blob = b64toBlob(dataUri);
-  currentBlobUrl = URL.createObjectURL(blob);
+  const canvas = document.getElementById('modal-preview-pdf-canvas');
+  const loadingMsg = document.getElementById('pdf-loading-msg');
 
   const icon = isPdf ? '📄' : '🖼️';
   title.innerText = `${icon} ${name}`;
-  extBtn.href = currentBlobUrl;
-
-  if (isPdf) {
-    imgEl.classList.add('hidden');
-    pdfFrame.src = currentBlobUrl;
-    pdfFrame.classList.remove('hidden');
-  } else {
-    pdfFrame.classList.add('hidden');
-    imgEl.src = currentBlobUrl;
-    imgEl.classList.remove('hidden');
-  }
-
   modal.classList.remove('hidden');
+
+  if (!isPdf) {
+    // 画像プレビュー：スクロール不要で枠いっぱいに表示
+    pageControls.classList.add('hidden');
+    canvas.classList.add('hidden');
+    loadingMsg.classList.add('hidden');
+    imgEl.src = dataUri;
+    imgEl.classList.remove('hidden');
+  } else {
+    // PDFプレビュー：PDF.js Canvasレンダリングで画面枠いっぱいにスクロールなし表示
+    imgEl.classList.add('hidden');
+    canvas.classList.remove('hidden');
+    pageControls.classList.remove('hidden');
+    loadingMsg.classList.remove('hidden');
+
+    try {
+      const pdfDataBytes = b64toUint8Array(dataUri);
+      
+      // スマホのWorker通信ブロックを防ぐ直接レンダリング設定
+      const loadingTask = pdfjsLib.getDocument({
+        data: pdfDataBytes,
+        disableWorker: true,
+        useSystemFonts: true
+      });
+      currentPdfDoc = await loadingTask.promise;
+      totalPdfPages = currentPdfDoc.numPages;
+      currentPdfPage = 1;
+      
+      // モーダルが完全に表示されてコンテナの寸法が確定した後にレンダリング（極小描画防止）
+      requestAnimationFrame(() => {
+        renderPdfCanvasPage(currentPdfPage);
+      });
+    } catch (err) {
+      console.error("PDF Canvas描画失敗。スマホ標準ビューアーへ自動切替:", err);
+      // 万一Canvas生成が制限されたスマホ環境では、OSネイティブのPDF機能で全画面即時表示
+      try {
+        const blob = b64toBlob(dataUri);
+        const blobUrl = URL.createObjectURL(blob);
+        closeFilePreviewModal();
+        window.open(blobUrl, '_blank') || (location.href = blobUrl);
+      } catch (e2) {
+        alert("PDFの読み込みに失敗しました。");
+        closeFilePreviewModal();
+      }
+    }
+  }
+}
+
+async function renderPdfCanvasPage(pageNum) {
+  if (!currentPdfDoc) return;
+  const loadingMsg = document.getElementById('pdf-loading-msg');
+  loadingMsg.innerText = "読み込み中...";
+  loadingMsg.classList.remove('hidden');
+
+  try {
+    const page = await currentPdfDoc.getPage(pageNum);
+    const container = document.getElementById('preview-container');
+    const canvas = document.getElementById('modal-preview-pdf-canvas');
+    const ctx = canvas.getContext('2d');
+
+    // プレビューコンテナの正確な有効ピクセルサイズ
+    const availWidth = Math.max(container.clientWidth, 200);
+    const availHeight = Math.max(container.clientHeight, 200);
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+
+    // スクロールなしで画面枠「いっぱいに映る」最大スケール（縦横比維持）を計算
+    const scaleX = availWidth / unscaledViewport.width;
+    const scaleY = availHeight / unscaledViewport.height;
+    const fitScale = Math.min(scaleX, scaleY);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const viewport = page.getViewport({ scale: fitScale * dpr });
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    // 表示サイズ（CSS）をコンテナいっぱいにフィット
+    canvas.style.width = `${viewport.width / dpr}px`;
+    canvas.style.height = `${viewport.height / dpr}px`;
+
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    };
+
+    await page.render(renderContext).promise;
+    loadingMsg.classList.add('hidden');
+  } catch(e) {
+    console.error("Render page error:", e);
+    loadingMsg.innerText = "ページの描画に失敗しました。";
+  } finally {
+    document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
+    document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
+    document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+  }
+}
+
+function changePdfPage(delta) {
+  const target = currentPdfPage + delta;
+  if (target >= 1 && target <= totalPdfPages) {
+    currentPdfPage = target;
+    renderPdfCanvasPage(currentPdfPage);
+  }
 }
 
 function closeFilePreviewModal() {
   const modal = document.getElementById('file-preview-modal');
   const imgEl = document.getElementById('modal-preview-image');
-  const pdfFrame = document.getElementById('modal-preview-pdf-frame');
+  const canvas = document.getElementById('modal-preview-pdf-canvas');
   
   imgEl.src = "";
-  pdfFrame.src = "";
-  if (currentBlobUrl) {
-    URL.revokeObjectURL(currentBlobUrl);
-    currentBlobUrl = null;
+  currentPdfDoc = null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   }
   modal.classList.add('hidden');
 }
@@ -2053,7 +2163,7 @@ async function syncWithCloud(silent = false) {
       if (!silent) alert('最新データを同期しました！');
     } else {
       await pushToCloud(false);
-      indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+      indicator.innerText = `☁️️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
       if (!silent) alert('ローカルのデータをスプレッドシートに保存しました！');
     }
   } catch (err) {
