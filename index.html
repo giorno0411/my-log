@@ -637,7 +637,6 @@
     opacity: 0.3;
     cursor: not-allowed;
   }
-  /* スクロールせず1画面に完全に収まるキャンバスコンテナ */
   .pdf-canvas-container {
     flex: 1;
     width: 100%;
@@ -881,7 +880,8 @@
       <button class="modal-close" onclick="closeSettingsModal()">✕</button>
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
-      Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでデータを自動同期できます。
+      Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでテキストデータを同期できます。<br>
+      <span style="color:#38bdf8; font-size:11px;">※容量の大きい添付PDF本体は端末内（IndexedDB）に安全に完全保存されます。</span>
     </p>
     <input type="text" id="gas-url-input" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
     <div class="modal-actions">
@@ -913,19 +913,69 @@
 <script>
 const STORAGE_KEY = "daily_work_learning_logs_main";
 const GAS_URL_KEY = "daily_work_learning_gas_url";
+const DB_NAME = "DailyWorkLearningLogDB";
+const STORE_NAME = "logs_store";
 let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
 // 新規作成用の添付PDF保持変数
 let newPdfs = { tasks: null, detail: null, memo: null };
-// インライン編集中レコードの添付PDF保持オブジェクト { tasks, detail, memo, qaListPdfs: [] }
+// インライン編集中レコードの添付PDF保持オブジェクト
 let inlinePdfState = { tasks: null, detail: null, memo: null };
 
 // PDF.js 閲覧制御用変数
 let currentPdfDoc = null;
 let currentPdfPage = 1;
 let totalPdfPages = 1;
+
+/* ============================================================
+   大容量対応 IndexedDB 永続化エンジン（PDF消失・容量オーバー完全防止）
+   ============================================================ */
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = function(e) { resolve(e.target.result); };
+    request.onerror = function(e) { reject(e); };
+  });
+}
+
+async function idbSaveLogs(data) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(data, "main_logs");
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function(err) { reject(err); };
+    });
+  } catch (err) {
+    console.error("IDB save error:", err);
+  }
+}
+
+async function idbLoadLogs() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get("main_logs");
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function(err) { reject(err); };
+    });
+  } catch (err) {
+    console.error("IDB load error:", err);
+    return null;
+  }
+}
 
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
@@ -994,8 +1044,8 @@ function handlePdfUpload(e, mode, field) {
     alert("PDFファイルのみ添付できます。");
     return;
   }
-  if (file.size > 3.5 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。3.5MB以下のPDFを添付してください。");
+  if (file.size > 8 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。8MB以下のPDFを添付してください。");
     return;
   }
 
@@ -1056,8 +1106,8 @@ function handleQaPdfUpload(e, cardEl) {
     alert("PDFファイルのみ添付できます。");
     return;
   }
-  if (file.size > 3.5 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。3.5MB以下のPDFを添付してください。");
+  if (file.size > 8 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。8MB以下のPDFを添付してください。");
     return;
   }
 
@@ -1105,7 +1155,6 @@ async function openPdfViewModal(name, dataUri) {
   document.getElementById('pdf-loading-msg').style.display = 'block';
 
   try {
-    // Base64 Data URL から Uint8Array へ安全変換
     const base64Data = dataUri.split(',')[1];
     const binaryStr = atob(base64Data);
     const len = binaryStr.length;
@@ -1134,19 +1183,14 @@ async function renderPdfPage(pageNum) {
   const canvas = document.getElementById('pdf-render-canvas');
   const ctx = canvas.getContext('2d');
 
-  // コンテナの利用可能エリア（パディング考慮）
   const availWidth = container.clientWidth - 16;
   const availHeight = container.clientHeight - 16;
-
-  // 初期スケール（1.0）でのページ実寸
   const unscaledViewport = page.getViewport({ scale: 1.0 });
 
-  // 画面スクロールを起こさず、縦横完全に収まる比率（fit-to-page）を計算
   const scaleX = availWidth / unscaledViewport.width;
   const scaleY = availHeight / unscaledViewport.height;
   const fitScale = Math.min(scaleX, scaleY);
 
-  // Retina/高DPIディスプレイでもくっきり綺麗に表示
   const dpr = window.devicePixelRatio || 1;
   const viewport = page.getViewport({ scale: fitScale * dpr });
 
@@ -1163,7 +1207,6 @@ async function renderPdfPage(pageNum) {
   await page.render(renderContext).promise;
   document.getElementById('pdf-loading-msg').style.display = 'none';
 
-  // ページ送りボタンと現在ページ表示を更新
   document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
   document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
   document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
@@ -1185,12 +1228,13 @@ function closePdfViewModal() {
   document.getElementById('pdf-view-modal').classList.add('hidden');
 }
 
-window.onload = function() {
+window.onload = async function() {
   const today = getLocalDateString();
   document.getElementById('input-date').value = today;
   updateDateDisplay('input-date', 'date-display-text');
   document.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-  loadLogs();
+  
+  await loadLogs();
   updateMonthFilterOptions();
   onDateChanged();
   if (localStorage.getItem(GAS_URL_KEY)) syncWithCloud(true);
@@ -1275,15 +1319,28 @@ function removeQaInputRow(btn) {
   }
 }
 
-function loadLogs() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  logs = saved ? JSON.parse(saved) : [];
+/* IndexedDB優先でデータを安全ロード */
+async function loadLogs() {
+  const idbData = await idbLoadLogs();
+  if (Array.isArray(idbData) && idbData.length > 0) {
+    logs = idbData;
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    logs = saved ? JSON.parse(saved) : [];
+    if (logs.length > 0) await idbSaveLogs(logs);
+  }
   updateMonthFilterOptions();
   renderLogs();
 }
 
-function saveLogs(triggerCloud = true) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+/* 端末内（IndexedDB）へ大容量データを完全永続化し、クラウドへは安全に送信 */
+async function saveLogs(triggerCloud = true) {
+  await idbSaveLogs(logs);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+  } catch (e) {
+    // localStorage容量上限(5MB)時の安全フォールバック（IndexedDBが保持するため問題なし）
+  }
   updateMonthFilterOptions();
   renderLogs();
   if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
@@ -1742,7 +1799,7 @@ function renderLogs() {
             ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
             ${item.tasksPdf ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.tasksPdf.name)}", "${item.tasksPdf.data}")'>
+                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "tasks")'>
                   📄 ${escapeHtml(item.tasksPdf.name)} (${item.tasksPdf.size})
                 </button>
               </div>
@@ -1754,7 +1811,7 @@ function renderLogs() {
             ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
             ${item.detailPdf ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.detailPdf.name)}", "${item.detailPdf.data}")'>
+                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "detail")'>
                   📄 ${escapeHtml(item.detailPdf.name)} (${item.detailPdf.size})
                 </button>
               </div>
@@ -1770,7 +1827,7 @@ function renderLogs() {
                   ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
                   ${qa.pdf ? `
                     <div style="margin-top:4px;">
-                      <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(qa.pdf.name)}", "${qa.pdf.data}")'>
+                      <button type="button" class="log-pdf-badge" onclick='openPdfFromQa(${item.id},${i})'>
                         📄 ${escapeHtml(qa.pdf.name)} (${qa.pdf.size})
                       </button>
                     </div>
@@ -1785,7 +1842,7 @@ function renderLogs() {
             ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
             ${item.memoPdf ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfViewModal("${escapeHtml(item.memoPdf.name)}", "${item.memoPdf.data}")'>
+                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "memo")'>
                   📄 ${escapeHtml(item.memoPdf.name)} (${item.memoPdf.size})
                 </button>
               </div>
@@ -1799,7 +1856,27 @@ function renderLogs() {
   });
 }
 
+/* ログ内PDFの安全な呼び出し */
+function openPdfFromLog(logId, field) {
+  const item = logs.find(it => it.id === logId);
+  if (!item) return;
+  const pdfObj = item[`${field}Pdf`];
+  if (pdfObj && pdfObj.data) {
+    openPdfViewModal(pdfObj.name, pdfObj.data);
+  }
+}
+
+function openPdfFromQa(logId, qaIndex) {
+  const item = logs.find(it => it.id === logId);
+  if (!item || !item.qaList || !item.qaList[qaIndex]) return;
+  const pdfObj = item.qaList[qaIndex].pdf;
+  if (pdfObj && pdfObj.data) {
+    openPdfViewModal(pdfObj.name, pdfObj.data);
+  }
+}
+
 function escapeHtml(str) {
+  if (!str) return "";
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 }
 
@@ -1815,19 +1892,38 @@ function saveGasUrlSetting() {
   if (url) pushToCloud(true);
 }
 
+/* クラウド（GAS/スプレッドシート）用の軽量化データ作成（5万文字エラー遮断） */
+function getCloudSafeLogs() {
+  return logs.map(item => {
+    const clone = { ...item };
+    if (clone.tasksPdf) clone.tasksPdf = { name: clone.tasksPdf.name, size: clone.tasksPdf.size };
+    if (clone.detailPdf) clone.detailPdf = { name: clone.detailPdf.name, size: clone.detailPdf.size };
+    if (clone.memoPdf) clone.memoPdf = { name: clone.memoPdf.name, size: clone.memoPdf.size };
+    if (Array.isArray(clone.qaList)) {
+      clone.qaList = clone.qaList.map(qa => {
+        const qaClone = { ...qa };
+        if (qaClone.pdf) qaClone.pdf = { name: qaClone.pdf.name, size: qaClone.pdf.size };
+        return qaClone;
+      });
+    }
+    return clone;
+  });
+}
+
 async function pushToCloud(showAlert = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) return;
   const indicator = document.getElementById('sync-status-indicator');
   indicator.innerText = "☁️ クラウドに保存中...";
   try {
+    const safeData = getCloudSafeLogs();
     await fetch(url, {
       method: "POST", mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(logs)
+      body: JSON.stringify(safeData)
     });
     indicator.innerText = `☁️ クラウド保存済み (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
-    if (showAlert) alert('ローカルのデータをスプレッドシートへ送信しました！');
+    if (showAlert) alert('テキストデータをスプレッドシートへ送信しました！');
   } catch (err) {
     indicator.innerText = "⚠️ クラウド保存に失敗";
     if (showAlert) alert('クラウド保存に失敗しました。');
@@ -1843,8 +1939,28 @@ async function syncWithCloud(silent = false) {
     const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
     const cloudData = await res.json();
     if (Array.isArray(cloudData) && cloudData.length > 0) {
-      logs = cloudData;
-      saveLogs(false);
+      // 端末内のPDFバイナリデータを保護しながらマージ
+      const localMap = new Map();
+      logs.forEach(l => localMap.set(l.id, l));
+
+      logs = cloudData.map(cItem => {
+        const localItem = localMap.get(cItem.id);
+        if (localItem) {
+          if (localItem.tasksPdf && localItem.tasksPdf.data && cItem.tasksPdf) cItem.tasksPdf.data = localItem.tasksPdf.data;
+          if (localItem.detailPdf && localItem.detailPdf.data && cItem.detailPdf) cItem.detailPdf.data = localItem.detailPdf.data;
+          if (localItem.memoPdf && localItem.memoPdf.data && cItem.memoPdf) cItem.memoPdf.data = localItem.memoPdf.data;
+          if (Array.isArray(cItem.qaList) && Array.isArray(localItem.qaList)) {
+            cItem.qaList.forEach((qa, idx) => {
+              if (localItem.qaList[idx] && localItem.qaList[idx].pdf && localItem.qaList[idx].pdf.data && qa.pdf) {
+                qa.pdf.data = localItem.qaList[idx].pdf.data;
+              }
+            });
+          }
+        }
+        return cItem;
+      });
+
+      await saveLogs(false);
       indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
       if (!silent) alert('最新データを同期しました！');
     } else {
@@ -1876,11 +1992,13 @@ function importJSON() {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = event => {
+    reader.onload = async event => {
       try {
         const imported = JSON.parse(event.target.result);
         if (Array.isArray(imported)) {
-          logs = imported; saveLogs(true); onDateChanged();
+          logs = imported;
+          await saveLogs(true);
+          onDateChanged();
           alert('復元が完了しました！');
         }
       } catch (err) { alert('ファイルの読み込みに失敗しました'); }
