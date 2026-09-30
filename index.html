@@ -601,7 +601,7 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビュー用モーダル（PDF・画像両対応・スクロールなし完全収容） */
+  /* プレビュー用モーダル（画像は縦横フィット・スクロールなし） */
   .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -663,16 +663,6 @@
     border: none;
     border-radius: 4px;
     background: #fff;
-  }
-  .pdf-fallback-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #cbd5e1;
-    padding: 20px;
-    text-align: center;
   }
 
   .footer-actions {
@@ -893,7 +883,7 @@
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-card">
     <div class="modal-title">
-      <span>⚙️ クラウド同期設定</span>
+      <span>⚙️️ クラウド同期設定</span>
       <button class="modal-close" onclick="closeSettingsModal()">✕</button>
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
@@ -908,7 +898,7 @@
   </div>
 </div>
 
-<!-- スマホ・PC完全対応：プレビュー用モーダル（PDF・画像両対応） -->
+<!-- スマホ・PC完全対応：プレビュー用モーダル（画像は窓内フィット、PDFはPC窓内またはスマホ別タブ確実起動） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
@@ -921,11 +911,6 @@
     <div class="preview-container" id="preview-container">
       <img id="modal-preview-image" class="hidden" alt="プレビュー画像">
       <iframe id="modal-preview-pdf-frame" class="hidden"></iframe>
-      <div id="pdf-fallback-box" class="pdf-fallback-box hidden">
-        <p style="margin:0; font-size:14px; font-weight:bold;">📄 PDFファイルを読み込みました</p>
-        <p style="margin:0; font-size:12px; color:#94a3b8;">スマホのセキュリティ設定により画面内に表示されない場合は、下のボタンから開いてください。</p>
-        <a id="btn-fallback-open" class="btn-submit" style="text-decoration:none; padding:8px 16px; font-size:13px;" target="_blank" rel="noopener">PDFを全画面で閲覧</a>
-      </div>
     </div>
   </div>
 </div>
@@ -1212,39 +1197,43 @@ function renderQaFilesPreview(cardEl, fileList) {
 
 /* スマホ・PC完全対応：ファイルプレビューモーダル */
 function openFilePreviewModal(name, dataUri, type) {
+  const isPdf = (type === 'pdf') || (!type && dataUri.startsWith('data:application/pdf'));
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+  // スマホでPDFの場合は、ブラウザ制限を受けない端末ネイティブのPDFエンジン（別タブ）で即時100%確実に開く
+  if (isPdf && isMobile) {
+    const blob = b64toBlob(dataUri);
+    const blobUrl = URL.createObjectURL(blob);
+    const win = window.open(blobUrl, '_blank');
+    if (!win) {
+      location.href = blobUrl;
+    }
+    return;
+  }
+
+  // 画像またはPC環境でのプレビュー表示
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('preview-modal-title');
   const extBtn = document.getElementById('btn-external-view');
-  const fallbackBtn = document.getElementById('btn-fallback-open');
   const imgEl = document.getElementById('modal-preview-image');
   const pdfFrame = document.getElementById('modal-preview-pdf-frame');
-  const fallbackBox = document.getElementById('pdf-fallback-box');
 
   if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
   const blob = b64toBlob(dataUri);
   currentBlobUrl = URL.createObjectURL(blob);
 
-  const icon = type === 'image' ? '🖼️️' : '📄';
+  const icon = isPdf ? '📄' : '🖼️';
   title.innerText = `${icon} ${name}`;
   extBtn.href = currentBlobUrl;
-  fallbackBtn.href = currentBlobUrl;
 
-  if (type === 'image') {
+  if (isPdf) {
+    imgEl.classList.add('hidden');
+    pdfFrame.src = currentBlobUrl;
+    pdfFrame.classList.remove('hidden');
+  } else {
     pdfFrame.classList.add('hidden');
-    fallbackBox.classList.add('hidden');
     imgEl.src = currentBlobUrl;
     imgEl.classList.remove('hidden');
-  } else {
-    imgEl.classList.add('hidden');
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      pdfFrame.classList.add('hidden');
-      fallbackBox.classList.remove('hidden');
-    } else {
-      fallbackBox.classList.add('hidden');
-      pdfFrame.src = currentBlobUrl;
-      pdfFrame.classList.remove('hidden');
-    }
   }
 
   modal.classList.remove('hidden');
@@ -1357,7 +1346,6 @@ function removeQaInputRow(btn) {
   }
 }
 
-// 過去の単一ファイル保存オブジェクトを配列形式に安全移行
 function normalizeFilesArray(item, field) {
   if (Array.isArray(item[field])) return item[field];
   const oldSingle = item[field] || item[`${field.replace('Files', '')}File`] || item[`${field.replace('Files', '')}Pdf`];
@@ -1367,7 +1355,7 @@ function normalizeFilesArray(item, field) {
   return [];
 }
 
-/* IndexedDB優先でデータを安全ロード */
+/* IndexedDB優先でデータをロード */
 async function loadLogs() {
   const idbData = await idbLoadLogs();
   if (Array.isArray(idbData) && idbData.length > 0) {
@@ -1879,7 +1867,7 @@ function renderLogs() {
             ${detailFiles.length > 0 ? `
               <div class="log-file-badges-wrap">
                 ${detailFiles.map((f, fIdx) => `
-                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>${f.type === 'image' ? '🖼️️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
                   </button>
                 `).join('')}
               </div>
@@ -1918,7 +1906,7 @@ function renderLogs() {
             ${memoFiles.length > 0 ? `
               <div class="log-file-badges-wrap">
                 ${memoFiles.map((f, fIdx) => `
-                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>${f.type === 'image' ? '🖼️️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
                   </button>
                 `).join('')}
               </div>
@@ -1973,7 +1961,6 @@ function saveGasUrlSetting() {
   if (url) pushToCloud(true);
 }
 
-/* クラウド（GAS/スプレッドシート）用の軽量化データ作成（5万文字エラー遮断） */
 function getCloudSafeLogs() {
   return logs.map(item => {
     const clone = { ...item };
