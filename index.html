@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>日報・学習記録ノート</title>
+<!-- スマホでも確実にPDFをインライン描画するためのPDF.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -567,11 +572,11 @@
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.75);
+    background: rgba(0,0,0,0.85);
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 16px;
+    padding: 12px;
     z-index: 1000;
   }
   .modal-card {
@@ -587,25 +592,77 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* PDFその場閲覧用モーダル */
+  /* PDFその場閲覧用モーダル（スクロールなしで画面内に全収容） */
   .pdf-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     width: 100%;
-    max-width: 860px;
-    height: 85vh;
+    max-width: 720px;
+    height: 90vh;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
-    padding: 12px 16px;
+    padding: 10px 14px;
+    box-sizing: border-box;
+    overflow: hidden;
   }
-  .pdf-viewer-frame {
-    width: 100%;
+  .pdf-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--card-border);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .pdf-nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-main);
+  }
+  .btn-pdf-nav {
+    background: #334155;
+    color: #f8fafc;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-pdf-nav:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  /* スクロールせず1画面に完全に収まるキャンバスコンテナ */
+  .pdf-canvas-container {
     flex: 1;
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    background: #fff;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #090e1a;
+    border-radius: 6px;
     margin-top: 8px;
+    overflow: hidden;
+    position: relative;
+  }
+  #pdf-render-canvas {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    border-radius: 4px;
+  }
+  .pdf-loading-msg {
+    position: absolute;
+    color: #38bdf8;
+    font-size: 13px;
+    font-weight: bold;
   }
 
   .footer-actions {
@@ -834,14 +891,22 @@
   </div>
 </div>
 
-<!-- PDFその場閲覧モーダル -->
+<!-- スマホ対応・スクロールなし完全収容PDF閲覧モーダル -->
 <div class="modal-overlay hidden" id="pdf-view-modal">
   <div class="pdf-modal-card">
-    <div class="modal-title">
-      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:85%;">📄 PDFプレビュー</span>
+    <div class="pdf-modal-header">
+      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%; font-size:13px; font-weight:bold;">📄 PDF</span>
+      <div class="pdf-nav-controls">
+        <button type="button" class="btn-pdf-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
+        <span id="pdf-page-num-display" style="font-weight:bold;">1 / 1</span>
+        <button type="button" class="btn-pdf-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
+      </div>
       <button class="modal-close" onclick="closePdfViewModal()">✕</button>
     </div>
-    <iframe id="pdf-viewer-frame" class="pdf-viewer-frame" src=""></iframe>
+    <div class="pdf-canvas-container" id="pdf-canvas-container">
+      <div class="pdf-loading-msg" id="pdf-loading-msg">PDFを読み込み中...</div>
+      <canvas id="pdf-render-canvas"></canvas>
+    </div>
   </div>
 </div>
 
@@ -854,8 +919,13 @@ const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)
 
 // 新規作成用の添付PDF保持変数
 let newPdfs = { tasks: null, detail: null, memo: null };
-// インライン編集用の一時PDF保持変数
-let inlinePdfs = { tasks: null, detail: null, memo: null };
+// インライン編集中レコードの添付PDF保持オブジェクト { tasks, detail, memo, qaListPdfs: [] }
+let inlinePdfState = { tasks: null, detail: null, memo: null };
+
+// PDF.js 閲覧制御用変数
+let currentPdfDoc = null;
+let currentPdfPage = 1;
+let totalPdfPages = 1;
 
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
@@ -941,7 +1011,7 @@ function handlePdfUpload(e, mode, field) {
       newPdfs[field] = pdfObj;
       renderPdfAttachPreview('new', field);
     } else {
-      inlinePdfs[field] = pdfObj;
+      inlinePdfState[field] = pdfObj;
       renderPdfAttachPreview('inline', field, mode);
     }
   };
@@ -954,7 +1024,7 @@ function removeAttachedPdf(mode, field, logId = null) {
     newPdfs[field] = null;
     renderPdfAttachPreview('new', field);
   } else {
-    inlinePdfs[field] = null;
+    inlinePdfState[field] = null;
     renderPdfAttachPreview('inline', field, logId);
   }
 }
@@ -964,7 +1034,7 @@ function renderPdfAttachPreview(mode, field, logId = null) {
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const pdf = mode === 'new' ? newPdfs[field] : inlinePdfs[field];
+  const pdf = mode === 'new' ? newPdfs[field] : inlinePdfState[field];
   if (!pdf) {
     container.innerHTML = "";
     return;
@@ -1028,15 +1098,90 @@ function renderQaPdfPreview(cardEl, pdfObj) {
   `;
 }
 
-/* モーダルでPDFを開く */
-function openPdfViewModal(name, dataUri) {
+/* PDF.js を使ったスマホ対応・画面完全収容プレビュー */
+async function openPdfViewModal(name, dataUri) {
   document.getElementById('pdf-modal-title').innerText = `📄 ${name}`;
-  document.getElementById('pdf-viewer-frame').src = dataUri;
   document.getElementById('pdf-view-modal').classList.remove('hidden');
+  document.getElementById('pdf-loading-msg').style.display = 'block';
+
+  try {
+    // Base64 Data URL から Uint8Array へ安全変換
+    const base64Data = dataUri.split(',')[1];
+    const binaryStr = atob(base64Data);
+    const len = binaryStr.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    const loadingTask = pdfjsLib.getDocument({ data: bytes });
+    currentPdfDoc = await loadingTask.promise;
+    totalPdfPages = currentPdfDoc.numPages;
+    currentPdfPage = 1;
+    await renderPdfPage(currentPdfPage);
+  } catch (err) {
+    alert("PDFの読み込みに失敗しました。");
+    closePdfViewModal();
+  }
+}
+
+async function renderPdfPage(pageNum) {
+  if (!currentPdfDoc) return;
+  document.getElementById('pdf-loading-msg').style.display = 'block';
+  
+  const page = await currentPdfDoc.getPage(pageNum);
+  const container = document.getElementById('pdf-canvas-container');
+  const canvas = document.getElementById('pdf-render-canvas');
+  const ctx = canvas.getContext('2d');
+
+  // コンテナの利用可能エリア（パディング考慮）
+  const availWidth = container.clientWidth - 16;
+  const availHeight = container.clientHeight - 16;
+
+  // 初期スケール（1.0）でのページ実寸
+  const unscaledViewport = page.getViewport({ scale: 1.0 });
+
+  // 画面スクロールを起こさず、縦横完全に収まる比率（fit-to-page）を計算
+  const scaleX = availWidth / unscaledViewport.width;
+  const scaleY = availHeight / unscaledViewport.height;
+  const fitScale = Math.min(scaleX, scaleY);
+
+  // Retina/高DPIディスプレイでもくっきり綺麗に表示
+  const dpr = window.devicePixelRatio || 1;
+  const viewport = page.getViewport({ scale: fitScale * dpr });
+
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  canvas.style.width = `${viewport.width / dpr}px`;
+  canvas.style.height = `${viewport.height / dpr}px`;
+
+  const renderContext = {
+    canvasContext: ctx,
+    viewport: viewport
+  };
+
+  await page.render(renderContext).promise;
+  document.getElementById('pdf-loading-msg').style.display = 'none';
+
+  // ページ送りボタンと現在ページ表示を更新
+  document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
+  document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
+  document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+}
+
+function changePdfPage(delta) {
+  const target = currentPdfPage + delta;
+  if (target >= 1 && target <= totalPdfPages) {
+    currentPdfPage = target;
+    renderPdfPage(currentPdfPage);
+  }
 }
 
 function closePdfViewModal() {
-  document.getElementById('pdf-viewer-frame').src = "";
+  currentPdfDoc = null;
+  const canvas = document.getElementById('pdf-render-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   document.getElementById('pdf-view-modal').classList.add('hidden');
 }
 
@@ -1257,7 +1402,7 @@ function startInlineEdit(id) {
   editingInlineLogId = id;
   const item = logs.find(it => it.id === id);
   if (item) {
-    inlinePdfs = {
+    inlinePdfState = {
       tasks: item.tasksPdf || null,
       detail: item.detailPdf || null,
       memo: item.memoPdf || null
@@ -1271,7 +1416,6 @@ function startInlineEdit(id) {
     renderPdfAttachPreview('inline', 'detail', id);
     renderPdfAttachPreview('inline', 'memo', id);
 
-    // インラインQ&Aの既存添付PDFプレビュー復元
     form.querySelectorAll('.qa-item-card').forEach(cardEl => {
       if (cardEl.dataset.pdfData) {
         try {
@@ -1285,7 +1429,7 @@ function startInlineEdit(id) {
 
 function cancelInlineEdit() {
   editingInlineLogId = null;
-  inlinePdfs = { tasks: null, detail: null, memo: null };
+  inlinePdfState = { tasks: null, detail: null, memo: null };
   renderLogs();
 }
 
@@ -1349,22 +1493,23 @@ function saveInlineEdit(id) {
   });
 
   logs[idx] = {
+    ...logs[idx],
     id: id,
     date: date || logs[idx].date,
     place: place,
     tag: tag,
     person: person,
     tasks: tasks,
-    tasksPdf: inlinePdfs.tasks || null,
+    tasksPdf: inlinePdfState.tasks || null,
     detail: detail,
-    detailPdf: inlinePdfs.detail || null,
+    detailPdf: inlinePdfState.detail || null,
     qaList: qaList,
     memo: memo,
-    memoPdf: inlinePdfs.memo || null
+    memoPdf: inlinePdfState.memo || null
   };
 
   editingInlineLogId = null;
-  inlinePdfs = { tasks: null, detail: null, memo: null };
+  inlinePdfState = { tasks: null, detail: null, memo: null };
   saveLogs(true);
 }
 
@@ -1401,9 +1546,9 @@ function renderLogs() {
     else if (period.startsWith('month:')) periodMatch = item.date.startsWith(period.replace('month:', ''));
     else periodMatch = isPastFilterOn ? (selectedDate ? item.date <= selectedDate : true) : true;
     
-    const qaMatch = (item.qaList && item.qaList.some(qa => qa.q.toLowerCase().includes(query) || qa.a.toLowerCase().includes(query)));
+    const qaMatch = (item.qaList && item.qaList.some(qa => (qa.q && qa.q.toLowerCase().includes(query)) || (qa.a && qa.a.toLowerCase().includes(query))));
     const matchesQuery = (item.place && item.place.toLowerCase().includes(query)) ||
-                         item.tag.toLowerCase().includes(query) ||
+                         (item.tag && item.tag.toLowerCase().includes(query)) ||
                          (item.person && item.person.toLowerCase().includes(query)) ||
                          (item.tasks && item.tasks.toLowerCase().includes(query)) ||
                          (item.detail && item.detail.toLowerCase().includes(query)) ||
