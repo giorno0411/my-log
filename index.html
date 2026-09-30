@@ -170,19 +170,23 @@
     display: block;
   }
 
-  /* 添付ファイル（PDF・画像）操作エリア */
+  /* 添付ファイル（複数対応）操作エリア */
   .attach-control-area {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .attach-btn-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
   }
   .btn-attach-file {
     background: #1e293b;
     color: #38bdf8;
     border: 1px dashed #38bdf8;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: bold;
@@ -192,6 +196,11 @@
     gap: 4px;
   }
   .btn-attach-file:hover { background: #334155; }
+  .attach-file-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
   .attach-file-tag {
     background: #0f172a;
     border: 1px solid var(--primary);
@@ -208,7 +217,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    max-width: 180px;
+    max-width: 160px;
   }
   .attach-del-btn {
     background: transparent;
@@ -486,7 +495,13 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  /* 閲覧カード上のファイル添付チップ */
+  /* 閲覧カード上のファイル添付チップコンテナ */
+  .log-file-badges-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
   .log-file-badge {
     display: inline-flex;
     align-items: center;
@@ -497,7 +512,6 @@
     font-size: 11px;
     padding: 3px 8px;
     border-radius: 4px;
-    margin-top: 6px;
     cursor: pointer;
     font-weight: bold;
     transition: background 0.2s;
@@ -637,14 +651,12 @@
     overflow: hidden;
     position: relative;
   }
-  /* 画像：スクロールせず画面内に縦横フィット */
   #modal-preview-image {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     border-radius: 4px;
   }
-  /* PDF：スマホネイティブ表示オブジェクト */
   #modal-preview-pdf-frame {
     width: 100%;
     height: 100%;
@@ -764,11 +776,13 @@
     </div>
     <div id="input-tasks" class="rich-editor" contenteditable="true" placeholder="業務内容を入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-file">
-        📎 ファイル添付 (PDF/画像)
-        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'tasks')">
-      </label>
-      <div id="new-tasks-file-preview"></div>
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 ファイル添付 (複数可)
+          <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, 'new', 'tasks')">
+        </label>
+      </div>
+      <div id="new-tasks-file-list" class="attach-file-list"></div>
     </div>
     
     <!-- 💡 学習内容 -->
@@ -787,11 +801,13 @@
     </div>
     <div id="input-detail" class="rich-editor" contenteditable="true" placeholder="学習内容を入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-file">
-        📎 ファイル添付 (PDF/画像)
-        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'detail')">
-      </label>
-      <div id="new-detail-file-preview"></div>
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 ファイル添付 (複数可)
+          <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, 'new', 'detail')">
+        </label>
+      </div>
+      <div id="new-detail-file-list" class="attach-file-list"></div>
     </div>
 
     <!-- ❓ 疑問点 -->
@@ -825,11 +841,13 @@
     </div>
     <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-file">
-        📎 ファイル添付 (PDF/画像)
-        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'memo')">
-      </label>
-      <div id="new-memo-file-preview"></div>
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 ファイル添付 (複数可)
+          <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, 'new', 'memo')">
+        </label>
+      </div>
+      <div id="new-memo-file-list" class="attach-file-list"></div>
     </div>
     
     <div class="form-status" id="form-status"></div>
@@ -901,11 +919,8 @@
       </div>
     </div>
     <div class="preview-container" id="preview-container">
-      <!-- 画像用 -->
       <img id="modal-preview-image" class="hidden" alt="プレビュー画像">
-      <!-- PDF用（ハイブリッド埋め込み） -->
       <iframe id="modal-preview-pdf-frame" class="hidden"></iframe>
-      <!-- PDFネイティブ案内用フォールバック -->
       <div id="pdf-fallback-box" class="pdf-fallback-box hidden">
         <p style="margin:0; font-size:14px; font-weight:bold;">📄 PDFファイルを読み込みました</p>
         <p style="margin:0; font-size:12px; color:#94a3b8;">スマホのセキュリティ設定により画面内に表示されない場合は、下のボタンから開いてください。</p>
@@ -924,15 +939,15 @@ let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
-// 新規作成用の添付ファイル保持変数
-let newFiles = { tasks: null, detail: null, memo: null };
-// インライン編集中レコードの添付ファイル保持オブジェクト
-let inlineFileState = { tasks: null, detail: null, memo: null };
+// 新規作成用の添付ファイル配列保持 { tasks: [], detail: [], memo: [] }
+let newFiles = { tasks: [], detail: [], memo: [] };
+// インライン編集中レコードの添付ファイル配列保持
+let inlineFileState = { tasks: [], detail: [], memo: [] };
 
 let currentBlobUrl = null;
 
 /* ============================================================
-   大容量対応 IndexedDB 永続化エンジン（データ消失・容量制限完全防止）
+   大容量対応 IndexedDB 永続化エンジン
    ============================================================ */
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -1038,7 +1053,6 @@ function cleanAndFormatLegacyText(content) {
   return html;
 }
 
-/* Base64 Data URL を安全に Blob に変換 */
 function b64toBlob(dataURI) {
   const parts = dataURI.split(',');
   const byteString = atob(parts[1]);
@@ -1051,129 +1065,152 @@ function b64toBlob(dataURI) {
   return new Blob([ab], { type: mimeString });
 }
 
-/* ファイル添付（PDF & 画像）ハンドリング */
-function handleFileUpload(e, mode, field) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const isPdf = file.type === "application/pdf";
-  const isImage = file.type.startsWith("image/");
-  if (!isPdf && !isImage) {
-    alert("PDFまたは画像ファイル（JPEG / PNG / WebP 等）のみ添付できます。");
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。10MB以下のファイルを添付してください。");
-    return;
-  }
+/* ファイル複数添付ハンドリング */
+function handleFilesUpload(e, mode, field) {
+  const fileList = Array.from(e.target.files);
+  if (fileList.length === 0) return;
 
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const fileObj = {
-      name: file.name,
-      type: isPdf ? 'pdf' : 'image',
-      mimeType: file.type,
-      size: (file.size / 1024).toFixed(1) + " KB",
-      data: evt.target.result
-    };
+  fileList.forEach(file => {
+    const isPdf = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+    if (!isPdf && !isImage) return;
 
-    if (mode === 'new') {
-      newFiles[field] = fileObj;
-      renderFileAttachPreview('new', field);
-    } else {
-      inlineFileState[field] = fileObj;
-      renderFileAttachPreview('inline', field, mode);
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(10MB以下)`);
+      return;
     }
-  };
-  reader.readAsDataURL(file);
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const fileObj = {
+        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        name: file.name,
+        type: isPdf ? 'pdf' : 'image',
+        mimeType: file.type,
+        size: (file.size / 1024).toFixed(1) + " KB",
+        data: evt.target.result
+      };
+
+      if (mode === 'new') {
+        if (!Array.isArray(newFiles[field])) newFiles[field] = [];
+        newFiles[field].push(fileObj);
+        renderFilesAttachList('new', field);
+      } else {
+        if (!Array.isArray(inlineFileState[field])) inlineFileState[field] = [];
+        inlineFileState[field].push(fileObj);
+        renderFilesAttachList('inline', field, mode);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
   e.target.value = "";
 }
 
-function removeAttachedFile(mode, field, logId = null) {
+function removeSingleFile(mode, field, fileId, logId = null) {
   if (mode === 'new') {
-    newFiles[field] = null;
-    renderFileAttachPreview('new', field);
+    newFiles[field] = (newFiles[field] || []).filter(f => f.id !== fileId);
+    renderFilesAttachList('new', field);
   } else {
-    inlineFileState[field] = null;
-    renderFileAttachPreview('inline', field, logId);
+    inlineFileState[field] = (inlineFileState[field] || []).filter(f => f.id !== fileId);
+    renderFilesAttachList('inline', field, logId);
   }
 }
 
-function renderFileAttachPreview(mode, field, logId = null) {
-  const containerId = mode === 'new' ? `new-${field}-file-preview` : `inline-${field}-file-preview-${logId}`;
+function renderFilesAttachList(mode, field, logId = null) {
+  const containerId = mode === 'new' ? `new-${field}-file-list` : `inline-${field}-file-list-${logId}`;
   const container = document.getElementById(containerId);
   if (!container) return;
 
-  const file = mode === 'new' ? newFiles[field] : inlineFileState[field];
-  if (!file) {
+  const fileArr = mode === 'new' ? (newFiles[field] || []) : (inlineFileState[field] || []);
+  if (fileArr.length === 0) {
     container.innerHTML = "";
     return;
   }
 
-  const icon = file.type === 'image' ? '🖼️' : '📄';
-  container.innerHTML = `
-    <span class="attach-file-tag">
-      ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
-      <button type="button" class="attach-del-btn" onclick="removeAttachedFile('${mode}', '${field}', ${logId})" title="削除">✕</button>
-    </span>
-  `;
+  container.innerHTML = fileArr.map(file => {
+    const icon = file.type === 'image' ? '🖼️' : '📄';
+    return `
+      <span class="attach-file-tag">
+        ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
+        <button type="button" class="attach-del-btn" onclick="removeSingleFile('${mode}', '${field}', '${file.id}', ${logId})" title="削除">✕</button>
+      </span>
+    `;
+  }).join('');
 }
 
-/* Q&A用ファイル添付（PDF & 画像）ハンドリング */
-function handleQaFileUpload(e, cardEl) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const isPdf = file.type === "application/pdf";
-  const isImage = file.type.startsWith("image/");
-  if (!isPdf && !isImage) {
-    alert("PDFまたは画像ファイル（JPEG / PNG / WebP 等）のみ添付できます。");
-    return;
-  }
-  if (file.size > 10 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。10MB以下のファイルを添付してください。");
-    return;
+/* Q&A用複数ファイル添付ハンドリング */
+function handleQaFilesUpload(e, cardEl) {
+  const fileList = Array.from(e.target.files);
+  if (fileList.length === 0) return;
+
+  let currentList = [];
+  if (cardEl.dataset.filesData) {
+    try { currentList = JSON.parse(cardEl.dataset.filesData); } catch(err) { currentList = []; }
   }
 
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const fileObj = {
-      name: file.name,
-      type: isPdf ? 'pdf' : 'image',
-      mimeType: file.type,
-      size: (file.size / 1024).toFixed(1) + " KB",
-      data: evt.target.result
+  let loadedCount = 0;
+  fileList.forEach(file => {
+    const isPdf = file.type === "application/pdf";
+    const isImage = file.type.startsWith("image/");
+    if (!isPdf && !isImage) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(10MB以下)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      currentList.push({
+        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        name: file.name,
+        type: isPdf ? 'pdf' : 'image',
+        mimeType: file.type,
+        size: (file.size / 1024).toFixed(1) + " KB",
+        data: evt.target.result
+      });
+      loadedCount++;
+      if (loadedCount === fileList.length) {
+        cardEl.dataset.filesData = JSON.stringify(currentList);
+        renderQaFilesPreview(cardEl, currentList);
+      }
     };
-    cardEl.dataset.fileData = JSON.stringify(fileObj);
-    renderQaFilePreview(cardEl, fileObj);
-  };
-  reader.readAsDataURL(file);
+    reader.readAsDataURL(file);
+  });
   e.target.value = "";
 }
 
-function removeQaAttachedFile(btn) {
+function removeSingleQaFile(btn, fileId) {
   const cardEl = btn.closest('.qa-item-card');
   if (!cardEl) return;
-  cardEl.dataset.fileData = "";
-  const previewDiv = cardEl.querySelector('.qa-file-preview');
-  if (previewDiv) previewDiv.innerHTML = "";
+  let currentList = [];
+  if (cardEl.dataset.filesData) {
+    try { currentList = JSON.parse(cardEl.dataset.filesData); } catch(err) { currentList = []; }
+  }
+  currentList = currentList.filter(f => f.id !== fileId);
+  cardEl.dataset.filesData = JSON.stringify(currentList);
+  renderQaFilesPreview(cardEl, currentList);
 }
 
-function renderQaFilePreview(cardEl, fileObj) {
-  const previewDiv = cardEl.querySelector('.qa-file-preview');
+function renderQaFilesPreview(cardEl, fileList) {
+  const previewDiv = cardEl.querySelector('.qa-file-list');
   if (!previewDiv) return;
-  if (!fileObj) {
+  if (!Array.isArray(fileList) || fileList.length === 0) {
     previewDiv.innerHTML = "";
     return;
   }
-  const icon = fileObj.type === 'image' ? '🖼️️' : '📄';
-  previewDiv.innerHTML = `
-    <span class="attach-file-tag">
-      ${icon} <span class="attach-file-name" title="${escapeHtml(fileObj.name)}">${escapeHtml(fileObj.name)} (${fileObj.size})</span>
-      <button type="button" class="attach-del-btn" onclick="removeQaAttachedFile(this)" title="削除">✕</button>
-    </span>
-  `;
+  previewDiv.innerHTML = fileList.map(file => {
+    const icon = file.type === 'image' ? '🖼️' : '📄';
+    return `
+      <span class="attach-file-tag">
+        ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
+        <button type="button" class="attach-del-btn" onclick="removeSingleQaFile(this, '${file.id}')" title="削除">✕</button>
+      </span>
+    `;
+  }).join('');
 }
 
-/* スマホ・PC完全対応：ファイルプレビューモーダル（PDF・画像） */
+/* スマホ・PC完全対応：ファイルプレビューモーダル */
 function openFilePreviewModal(name, dataUri, type) {
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('preview-modal-title');
@@ -1187,7 +1224,7 @@ function openFilePreviewModal(name, dataUri, type) {
   const blob = b64toBlob(dataUri);
   currentBlobUrl = URL.createObjectURL(blob);
 
-  const icon = type === 'image' ? '🖼️' : '📄';
+  const icon = type === 'image' ? '🖼️️' : '📄';
   title.innerText = `${icon} ${name}`;
   extBtn.href = currentBlobUrl;
   fallbackBtn.href = currentBlobUrl;
@@ -1199,7 +1236,6 @@ function openFilePreviewModal(name, dataUri, type) {
     imgEl.classList.remove('hidden');
   } else {
     imgEl.classList.add('hidden');
-    // スマホSafari/Chromeでの描画判定
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
       pdfFrame.classList.add('hidden');
@@ -1284,12 +1320,12 @@ function onQuestionSelectChanged() {
   }
 }
 
-function addQaInputRow(qVal = "", aVal = "", fileObj = null) {
+function addQaInputRow(qVal = "", aVal = "", files = []) {
   const container = document.getElementById('qa-list-container');
   const itemDiv = document.createElement('div');
   itemDiv.className = 'qa-item-card';
-  if (fileObj) {
-    itemDiv.dataset.fileData = JSON.stringify(fileObj);
+  if (Array.isArray(files) && files.length > 0) {
+    itemDiv.dataset.filesData = JSON.stringify(files);
   }
   itemDiv.innerHTML = `
     <button type="button" class="btn-qa-del" onclick="removeQaInputRow(this)">✕</button>
@@ -1298,16 +1334,18 @@ function addQaInputRow(qVal = "", aVal = "", fileObj = null) {
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
     <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-      <label class="btn-attach-file">
-        📎 添付 (PDF/画像)
-        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
-      </label>
-      <div class="qa-file-preview"></div>
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 添付 (複数可)
+          <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+        </label>
+      </div>
+      <div class="attach-file-list qa-file-list"></div>
     </div>
   `;
   container.appendChild(itemDiv);
   itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-  if (fileObj) renderQaFilePreview(itemDiv, fileObj);
+  if (Array.isArray(files) && files.length > 0) renderQaFilesPreview(itemDiv, files);
 }
 
 function removeQaInputRow(btn) {
@@ -1317,6 +1355,16 @@ function removeQaInputRow(btn) {
     document.getElementById('has-question-select').value = 'none';
     document.getElementById('qa-inputs-area').classList.add('hidden');
   }
+}
+
+// 過去の単一ファイル保存オブジェクトを配列形式に安全移行
+function normalizeFilesArray(item, field) {
+  if (Array.isArray(item[field])) return item[field];
+  const oldSingle = item[field] || item[`${field.replace('Files', '')}File`] || item[`${field.replace('Files', '')}Pdf`];
+  if (oldSingle && typeof oldSingle === 'object') {
+    return [oldSingle];
+  }
+  return [];
 }
 
 /* IndexedDB優先でデータを安全ロード */
@@ -1363,10 +1411,10 @@ function resetFormForNew() {
   document.getElementById('qa-inputs-area').classList.add('hidden');
   document.getElementById('input-memo').innerHTML = '';
   
-  newFiles = { tasks: null, detail: null, memo: null };
-  renderFileAttachPreview('new', 'tasks');
-  renderFileAttachPreview('new', 'detail');
-  renderFileAttachPreview('new', 'memo');
+  newFiles = { tasks: [], detail: [], memo: [] };
+  renderFilesAttachList('new', 'tasks');
+  renderFilesAttachList('new', 'detail');
+  renderFilesAttachList('new', 'memo');
 
   const selectedDate = document.getElementById('input-date').value;
   updateDateDisplay('input-date', 'date-display-text');
@@ -1399,17 +1447,18 @@ function saveNewLog() {
     cards.forEach(card => {
       const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
       const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
-      let file = null;
-      if (card.dataset.fileData) {
-        try { file = JSON.parse(card.dataset.fileData); } catch(err) { file = null; }
+      let files = [];
+      if (card.dataset.filesData) {
+        try { files = JSON.parse(card.dataset.filesData); } catch(err) { files = []; }
       }
-      if (q || a || file) qaList.push({ q, a, file });
+      if (q || a || files.length > 0) qaList.push({ q, a, files });
     });
   }
 
   const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
   const emptyRegex = /^(<br>|\s)*$/;
-  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !newFiles.tasks && !newFiles.detail && !newFiles.memo) {
+  const hasFiles = (newFiles.tasks.length > 0) || (newFiles.detail.length > 0) || (newFiles.memo.length > 0);
+  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !hasFiles) {
     return alert('項目を入力してください');
   }
 
@@ -1420,12 +1469,12 @@ function saveNewLog() {
     tag: tag,
     person: person,
     tasks: emptyRegex.test(tasks) ? "" : tasks,
-    tasksFile: newFiles.tasks || null,
+    tasksFiles: newFiles.tasks || [],
     detail: emptyRegex.test(detail) ? "" : detail,
-    detailFile: newFiles.detail || null,
+    detailFiles: newFiles.detail || [],
     qaList: qaList,
     memo: emptyRegex.test(memo) ? "" : memo,
-    memoFile: newFiles.memo || null
+    memoFiles: newFiles.memo || []
   };
 
   logs.unshift(newLog);
@@ -1458,24 +1507,24 @@ function startInlineEdit(id) {
   const item = logs.find(it => it.id === id);
   if (item) {
     inlineFileState = {
-      tasks: item.tasksFile || item.tasksPdf || null,
-      detail: item.detailFile || item.detailPdf || null,
-      memo: item.memoFile || item.memoPdf || null
+      tasks: [...normalizeFilesArray(item, 'tasksFiles')],
+      detail: [...normalizeFilesArray(item, 'detailFiles')],
+      memo: [...normalizeFilesArray(item, 'memoFiles')]
     };
   }
   renderLogs();
   const form = document.getElementById(`inline-form-${id}`);
   if (form) {
     form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-    renderFileAttachPreview('inline', 'tasks', id);
-    renderFileAttachPreview('inline', 'detail', id);
-    renderFileAttachPreview('inline', 'memo', id);
+    renderFilesAttachList('inline', 'tasks', id);
+    renderFilesAttachList('inline', 'detail', id);
+    renderFilesAttachList('inline', 'memo', id);
 
     form.querySelectorAll('.qa-item-card').forEach(cardEl => {
-      if (cardEl.dataset.fileData) {
+      if (cardEl.dataset.filesData) {
         try {
-          const fileObj = JSON.parse(cardEl.dataset.fileData);
-          renderQaFilePreview(cardEl, fileObj);
+          const filesArr = JSON.parse(cardEl.dataset.filesData);
+          renderQaFilesPreview(cardEl, filesArr);
         } catch(err) {}
       }
     });
@@ -1484,7 +1533,7 @@ function startInlineEdit(id) {
 
 function cancelInlineEdit() {
   editingInlineLogId = null;
-  inlineFileState = { tasks: null, detail: null, memo: null };
+  inlineFileState = { tasks: [], detail: [], memo: [] };
   renderLogs();
 }
 
@@ -1500,11 +1549,13 @@ function addInlineQaRow(containerId) {
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor inline-qa-a" contenteditable="true"></div>
     <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-      <label class="btn-attach-file">
-        📎 添付 (PDF/画像)
-        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
-      </label>
-      <div class="qa-file-preview"></div>
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 添付 (複数可)
+          <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+        </label>
+      </div>
+      <div class="attach-file-list qa-file-list"></div>
     </div>
   `;
   container.appendChild(itemDiv);
@@ -1540,11 +1591,11 @@ function saveInlineEdit(id) {
   qaCards.forEach(card => {
     const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
     const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
-    let file = null;
-    if (card.dataset.fileData) {
-      try { file = JSON.parse(card.dataset.fileData); } catch(err) { file = null; }
+    let files = [];
+    if (card.dataset.filesData) {
+      try { files = JSON.parse(card.dataset.filesData); } catch(err) { files = []; }
     }
-    if (q || a || file) qaList.push({ q, a, file });
+    if (q || a || files.length > 0) qaList.push({ q, a, files });
   });
 
   logs[idx] = {
@@ -1555,16 +1606,16 @@ function saveInlineEdit(id) {
     tag: tag,
     person: person,
     tasks: tasks,
-    tasksFile: inlineFileState.tasks || null,
+    tasksFiles: inlineFileState.tasks || [],
     detail: detail,
-    detailFile: inlineFileState.detail || null,
+    detailFiles: inlineFileState.detail || [],
     qaList: qaList,
     memo: memo,
-    memoFile: inlineFileState.memo || null
+    memoFiles: inlineFileState.memo || []
   };
 
   editingInlineLogId = null;
-  inlineFileState = { tasks: null, detail: null, memo: null };
+  inlineFileState = { tasks: [], detail: [], memo: [] };
   saveLogs(true);
 }
 
@@ -1641,10 +1692,9 @@ function renderLogs() {
       const qaList = item.qaList || [];
       const isFirst = (index === 0), isLast = (index === itemsOnDay.length - 1);
 
-      // 旧フォーマット(Pdf)との互換
-      const tasksFile = item.tasksFile || item.tasksPdf;
-      const detailFile = item.detailFile || item.detailPdf;
-      const memoFile = item.memoFile || item.memoPdf;
+      const tasksFiles = normalizeFilesArray(item, 'tasksFiles');
+      const detailFiles = normalizeFilesArray(item, 'detailFiles');
+      const memoFiles = normalizeFilesArray(item, 'memoFiles');
 
       if (isEditingThis) {
         itemDiv.classList.add('is-editing');
@@ -1695,11 +1745,13 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-file">
-                📎 添付 (PDF/画像)
-                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'tasks')">
-              </label>
-              <div id="inline-tasks-file-preview-${item.id}"></div>
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (複数可)
+                  <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'tasks')">
+                </label>
+              </div>
+              <div id="inline-tasks-file-list-${item.id}" class="attach-file-list"></div>
             </div>
 
             <!-- 学習内容編集 -->
@@ -1718,11 +1770,13 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-file">
-                📎 添付 (PDF/画像)
-                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'detail')">
-              </label>
-              <div id="inline-detail-file-preview-${item.id}"></div>
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (複数可)
+                  <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'detail')">
+                </label>
+              </div>
+              <div id="inline-detail-file-list-${item.id}" class="attach-file-list"></div>
             </div>
 
             <!-- Q&A編集 -->
@@ -1730,20 +1784,24 @@ function renderLogs() {
               <span class="input-label">❓ 疑問点・回答</span>
               <div class="qa-list-container" id="${inlineQaContainerId}">
                 ${qaList.map(qa => {
-                  const qFile = qa.file || qa.pdf;
+                  let qFiles = [];
+                  if (Array.isArray(qa.files)) qFiles = qa.files;
+                  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
                   return `
-                    <div class="qa-item-card" data-file-data='${qFile ? escapeHtml(JSON.stringify(qFile)) : ""}'>
+                    <div class="qa-item-card" data-files-data='${escapeHtml(JSON.stringify(qFiles))}'>
                       <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
                       <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
                       <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
                       <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
                       <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
                       <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-                        <label class="btn-attach-file">
-                          📎 添付 (PDF/画像)
-                          <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
-                        </label>
-                        <div class="qa-file-preview"></div>
+                        <div class="attach-btn-row">
+                          <label class="btn-attach-file">
+                            📎 添付 (複数可)
+                            <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+                          </label>
+                        </div>
+                        <div class="attach-file-list qa-file-list"></div>
                       </div>
                     </div>
                   `;
@@ -1768,11 +1826,13 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-file">
-                📎 添付 (PDF/画像)
-                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'memo')">
-              </label>
-              <div id="inline-memo-file-preview-${item.id}"></div>
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (複数可)
+                  <input type="file" accept="application/pdf,image/*" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'memo')">
+                </label>
+              </div>
+              <div id="inline-memo-file-list-${item.id}" class="attach-file-list"></div>
             </div>
 
             <div class="inline-btn-group">
@@ -1800,26 +1860,28 @@ function renderLogs() {
             </div>
           </div>
 
-          ${item.tasks || tasksFile ? `
+          ${item.tasks || tasksFiles.length > 0 ? `
             <div class="log-section-label">📌 業務内容</div>
             ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
-            ${tasksFile ? `
-              <div>
-                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasks")'>
-                  ${tasksFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(tasksFile.name)} (${tasksFile.size})
-                </button>
+            ${tasksFiles.length > 0 ? `
+              <div class="log-file-badges-wrap">
+                ${tasksFiles.map((f, fIdx) => `
+                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasksFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                  </button>
+                `).join('')}
               </div>
             ` : ''}
           ` : ''}
 
-          ${item.detail || detailFile ? `
+          ${item.detail || detailFiles.length > 0 ? `
             <div class="log-section-label">💡 学習内容</div>
             ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
-            ${detailFile ? `
-              <div>
-                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detail")'>
-                  ${detailFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(detailFile.name)} (${detailFile.size})
-                </button>
+            ${detailFiles.length > 0 ? `
+              <div class="log-file-badges-wrap">
+                ${detailFiles.map((f, fIdx) => `
+                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>${f.type === 'image' ? '🖼️️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                  </button>
+                `).join('')}
               </div>
             ` : ''}
           ` : ''}
@@ -1828,15 +1890,20 @@ function renderLogs() {
             <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
             <div class="log-qa-group">
               ${qaList.map((qa, i) => {
-                const qFile = qa.file || qa.pdf;
+                let qFiles = [];
+                if (Array.isArray(qa.files)) qFiles = qa.files;
+                else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
                 return `
                   <div class="log-qa-single">
                     ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
                     ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
-                    ${qFile ? `
-                      <div style="margin-top:4px;">
-                        <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id}, ${i})'>${qFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qFile.name)} (${qFile.size})
-                        </button>
+                    ${qFiles.length > 0 ? `
+                      <div class="log-file-badges-wrap">
+                        ${qFiles.map((qf, qfIdx) => `
+                          <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id}, ${i}, ${qfIdx})'>
+                            ${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
+                          </button>
+                        `).join('')}
                       </div>
                     ` : ''}
                   </div>
@@ -1845,14 +1912,15 @@ function renderLogs() {
             </div>
           ` : ''}
 
-          ${item.memo || memoFile ? `
+          ${item.memo || memoFiles.length > 0 ? `
             <div class="log-section-label">📋 メモ</div>
             ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
-            ${memoFile ? `
-              <div>
-                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memo")'>
-                  ${memoFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(memoFile.name)} (${memoFile.size})
-                </button>
+            ${memoFiles.length > 0 ? `
+              <div class="log-file-badges-wrap">
+                ${memoFiles.map((f, fIdx) => `
+                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>${f.type === 'image' ? '🖼️️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                  </button>
+                `).join('')}
               </div>
             ` : ''}
           ` : ''}
@@ -1864,19 +1932,25 @@ function renderLogs() {
   });
 }
 
-function openFileFromLog(logId, field) {
+function openFileFromLog(logId, field, fIndex) {
   const item = logs.find(it => it.id === logId);
   if (!item) return;
-  const fileObj = item[`${field}File`] || item[`${field}Pdf`];
+  const files = normalizeFilesArray(item, field);
+  const fileObj = files[fIndex];
   if (fileObj && fileObj.data) {
     openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
   }
 }
 
-function openFileFromQa(logId, qaIndex) {
+function openFileFromQa(logId, qaIndex, fIndex) {
   const item = logs.find(it => it.id === logId);
   if (!item || !item.qaList || !item.qaList[qaIndex]) return;
-  const fileObj = item.qaList[qaIndex].file || item.qaList[qaIndex].pdf;
+  const qa = item.qaList[qaIndex];
+  let qFiles = [];
+  if (Array.isArray(qa.files)) qFiles = qa.files;
+  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
+
+  const fileObj = qFiles[fIndex];
   if (fileObj && fileObj.data) {
     openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
   }
@@ -1903,17 +1977,22 @@ function saveGasUrlSetting() {
 function getCloudSafeLogs() {
   return logs.map(item => {
     const clone = { ...item };
-    if (clone.tasksFile) clone.tasksFile = { name: clone.tasksFile.name, size: clone.tasksFile.size, type: clone.tasksFile.type };
-    if (clone.tasksPdf) clone.tasksPdf = { name: clone.tasksPdf.name, size: clone.tasksPdf.size };
-    if (clone.detailFile) clone.detailFile = { name: clone.detailFile.name, size: clone.detailFile.size, type: clone.detailFile.type };
-    if (clone.detailPdf) clone.detailPdf = { name: clone.detailPdf.name, size: clone.detailPdf.size };
-    if (clone.memoFile) clone.memoFile = { name: clone.memoFile.name, size: clone.memoFile.size, type: clone.memoFile.type };
-    if (clone.memoPdf) clone.memoPdf = { name: clone.memoPdf.name, size: clone.memoPdf.size };
+    ['tasksFiles', 'detailFiles', 'memoFiles'].forEach(fKey => {
+      const arr = normalizeFilesArray(clone, fKey);
+      clone[fKey] = arr.map(f => ({ id: f.id, name: f.name, size: f.size, type: f.type }));
+    });
+    delete clone.tasksFile; delete clone.tasksPdf;
+    delete clone.detailFile; delete clone.detailPdf;
+    delete clone.memoFile; delete clone.memoPdf;
+
     if (Array.isArray(clone.qaList)) {
       clone.qaList = clone.qaList.map(qa => {
         const qaClone = { ...qa };
-        if (qaClone.file) qaClone.file = { name: qaClone.file.name, size: qaClone.file.size, type: qaClone.file.type };
-        if (qaClone.pdf) qaClone.pdf = { name: qaClone.pdf.name, size: qaClone.pdf.size };
+        let qFiles = [];
+        if (Array.isArray(qaClone.files)) qFiles = qaClone.files;
+        else if (qaClone.file || qaClone.pdf) qFiles = [qaClone.file || qaClone.pdf];
+        qaClone.files = qFiles.map(f => ({ id: f.id, name: f.name, size: f.size, type: f.type }));
+        delete qaClone.file; delete qaClone.pdf;
         return qaClone;
       });
     }
@@ -1956,27 +2035,25 @@ async function syncWithCloud(silent = false) {
       logs = cloudData.map(cItem => {
         const localItem = localMap.get(cItem.id);
         if (localItem) {
-          const lTasks = localItem.tasksFile || localItem.tasksPdf;
-          if (lTasks && lTasks.data && (cItem.tasksFile || cItem.tasksPdf)) {
-            if (cItem.tasksFile) cItem.tasksFile.data = lTasks.data;
-            if (cItem.tasksPdf) cItem.tasksPdf.data = lTasks.data;
-          }
-          const lDetail = localItem.detailFile || localItem.detailPdf;
-          if (lDetail && lDetail.data && (cItem.detailFile || cItem.detailPdf)) {
-            if (cItem.detailFile) cItem.detailFile.data = lDetail.data;
-            if (cItem.detailPdf) cItem.detailPdf.data = lDetail.data;
-          }
-          const lMemo = localItem.memoFile || localItem.memoPdf;
-          if (lMemo && lMemo.data && (cItem.memoFile || cItem.memoPdf)) {
-            if (cItem.memoFile) cItem.memoFile.data = lMemo.data;
-            if (cItem.memoPdf) cItem.memoPdf.data = lMemo.data;
-          }
+          ['tasksFiles', 'detailFiles', 'memoFiles'].forEach(fKey => {
+            const locArr = normalizeFilesArray(localItem, fKey);
+            const cloudArr = normalizeFilesArray(cItem, fKey);
+            cItem[fKey] = cloudArr.map(cf => {
+              const matched = locArr.find(lf => lf.id === cf.id || lf.name === cf.name);
+              return matched ? { ...cf, data: matched.data } : cf;
+            });
+          });
+
           if (Array.isArray(cItem.qaList) && Array.isArray(localItem.qaList)) {
             cItem.qaList.forEach((qa, idx) => {
-              const lQaFile = localItem.qaList[idx] && (localItem.qaList[idx].file || localItem.qaList[idx].pdf);
-              if (lQaFile && lQaFile.data) {
-                if (qa.file) qa.file.data = lQaFile.data;
-                if (qa.pdf) qa.pdf.data = lQaFile.data;
+              const locQa = localItem.qaList[idx];
+              if (locQa) {
+                const locQFiles = Array.isArray(locQa.files) ? locQa.files : (locQa.file || locQa.pdf ? [locQa.file || locQa.pdf] : []);
+                const cloudQFiles = Array.isArray(qa.files) ? qa.files : (qa.file || qa.pdf ? [qa.file || qa.pdf] : []);
+                qa.files = cloudQFiles.map(cqf => {
+                  const matched = locQFiles.find(lqf => lqf.id === cqf.id || lqf.name === cqf.name);
+                  return matched ? { ...cqf, data: matched.data } : cqf;
+                });
               }
             });
           }
