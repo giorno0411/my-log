@@ -4,11 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>日報・学習記録ノート</title>
-<!-- スマホでも確実にPDFをインライン描画するためのPDF.js -->
+<!-- スマホでも外部制限なく動く軽量PDF.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-</script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -175,7 +172,6 @@
     display: block;
   }
 
-  /* 添付PDF操作エリア */
   .attach-control-area {
     display: flex;
     align-items: center;
@@ -491,7 +487,6 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  /* 閲覧カード上のPDF添付チップ */
   .log-pdf-badge {
     display: inline-flex;
     align-items: center;
@@ -613,13 +608,13 @@
     align-items: center;
     padding-bottom: 8px;
     border-bottom: 1px solid var(--card-border);
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
   }
   .pdf-nav-controls {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     font-size: 12px;
     color: var(--text-main);
   }
@@ -627,7 +622,7 @@
     background: #334155;
     color: #f8fafc;
     border: none;
-    padding: 4px 10px;
+    padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
     font-weight: bold;
@@ -636,6 +631,19 @@
   .btn-pdf-nav:disabled {
     opacity: 0.3;
     cursor: not-allowed;
+  }
+  .btn-open-external {
+    background: transparent;
+    border: 1px solid #38bdf8;
+    color: #38bdf8;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
   }
   .pdf-canvas-container {
     flex: 1;
@@ -653,9 +661,9 @@
   #pdf-render-canvas {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     border-radius: 4px;
+    display: block;
   }
   .pdf-loading-msg {
     position: absolute;
@@ -881,7 +889,7 @@
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
       Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでテキストデータを同期できます。<br>
-      <span style="color:#38bdf8; font-size:11px;">※容量の大きい添付PDF本体は端末内（IndexedDB）に安全に完全保存されます。</span>
+      <span style="color:#38bdf8; font-size:11px;">※添付PDF本体は端末内（IndexedDB）に安全に完全保存されます。</span>
     </p>
     <input type="text" id="gas-url-input" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
     <div class="modal-actions">
@@ -895,13 +903,16 @@
 <div class="modal-overlay hidden" id="pdf-view-modal">
   <div class="pdf-modal-card">
     <div class="pdf-modal-header">
-      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55%; font-size:13px; font-weight:bold;">📄 PDF</span>
+      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:45%; font-size:13px; font-weight:bold;">📄 PDF</span>
       <div class="pdf-nav-controls">
         <button type="button" class="btn-pdf-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
-        <span id="pdf-page-num-display" style="font-weight:bold;">1 / 1</span>
+        <span id="pdf-page-num-display" style="font-weight:bold; min-width:40px; text-align:center;">1 / 1</span>
         <button type="button" class="btn-pdf-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
       </div>
-      <button class="modal-close" onclick="closePdfViewModal()">✕</button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <a id="btn-native-view" class="btn-open-external" target="_blank" rel="noopener">別窓</a>
+        <button class="modal-close" onclick="closePdfViewModal()">✕</button>
+      </div>
     </div>
     <div class="pdf-canvas-container" id="pdf-canvas-container">
       <div class="pdf-loading-msg" id="pdf-loading-msg">PDFを読み込み中...</div>
@@ -928,6 +939,7 @@ let inlinePdfState = { tasks: null, detail: null, memo: null };
 let currentPdfDoc = null;
 let currentPdfPage = 1;
 let totalPdfPages = 1;
+let currentBlobUrl = null;
 
 /* ============================================================
    大容量対応 IndexedDB 永続化エンジン（PDF消失・容量オーバー完全防止）
@@ -1148,29 +1160,55 @@ function renderQaPdfPreview(cardEl, pdfObj) {
   `;
 }
 
-/* PDF.js を使ったスマホ対応・画面完全収容プレビュー */
+/* Base64 Data URL を安全に Blob に変換するユーティリティ */
+function b64toBlob(dataURI) {
+  const parts = dataURI.split(',');
+  const byteString = atob(parts[1]);
+  const mimeString = parts[0].split(':')[1].split(';')[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
+
+/* スマホ対応・画面完全収容プレビュー（Worker不使用＆Blobストリーミング） */
 async function openPdfViewModal(name, dataUri) {
   document.getElementById('pdf-modal-title').innerText = `📄 ${name}`;
   document.getElementById('pdf-view-modal').classList.remove('hidden');
   document.getElementById('pdf-loading-msg').style.display = 'block';
 
   try {
-    const base64Data = dataUri.split(',')[1];
-    const binaryStr = atob(base64Data);
-    const len = binaryStr.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
+    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+    const blob = b64toBlob(dataUri);
+    currentBlobUrl = URL.createObjectURL(blob);
 
-    const loadingTask = pdfjsLib.getDocument({ data: bytes });
+    // 別窓で開くリンクにもBlob URLをセット
+    const extBtn = document.getElementById('btn-native-view');
+    extBtn.href = currentBlobUrl;
+
+    // スマホでのCORSエラーを回避するため workerSrc をオフにし直接読み込む
+    const loadingTask = pdfjsLib.getDocument({
+      url: currentBlobUrl,
+      disableWorker: true,
+      isEvalSupported: false
+    });
+
     currentPdfDoc = await loadingTask.promise;
     totalPdfPages = currentPdfDoc.numPages;
     currentPdfPage = 1;
     await renderPdfPage(currentPdfPage);
   } catch (err) {
-    alert("PDFの読み込みに失敗しました。");
-    closePdfViewModal();
+    console.error("PDF preview error:", err);
+    // 万が一Canvas描画に失敗した場合でもスマホ標準ビューアーで確実に開く
+    if (currentBlobUrl) {
+      window.open(currentBlobUrl, '_blank');
+      closePdfViewModal();
+    } else {
+      alert("PDFの表示に失敗しました。");
+      closePdfViewModal();
+    }
   }
 }
 
@@ -1178,38 +1216,43 @@ async function renderPdfPage(pageNum) {
   if (!currentPdfDoc) return;
   document.getElementById('pdf-loading-msg').style.display = 'block';
   
-  const page = await currentPdfDoc.getPage(pageNum);
-  const container = document.getElementById('pdf-canvas-container');
-  const canvas = document.getElementById('pdf-render-canvas');
-  const ctx = canvas.getContext('2d');
+  try {
+    const page = await currentPdfDoc.getPage(pageNum);
+    const container = document.getElementById('pdf-canvas-container');
+    const canvas = document.getElementById('pdf-render-canvas');
+    const ctx = canvas.getContext('2d');
 
-  const availWidth = container.clientWidth - 16;
-  const availHeight = container.clientHeight - 16;
-  const unscaledViewport = page.getViewport({ scale: 1.0 });
+    const availWidth = Math.max(container.clientWidth - 16, 200);
+    const availHeight = Math.max(container.clientHeight - 16, 200);
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
 
-  const scaleX = availWidth / unscaledViewport.width;
-  const scaleY = availHeight / unscaledViewport.height;
-  const fitScale = Math.min(scaleX, scaleY);
+    // スクロールなしで画面枠内にぴったり収まる縮尺を計算
+    const scaleX = availWidth / unscaledViewport.width;
+    const scaleY = availHeight / unscaledViewport.height;
+    const fitScale = Math.min(scaleX, scaleY);
 
-  const dpr = window.devicePixelRatio || 1;
-  const viewport = page.getViewport({ scale: fitScale * dpr });
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // モバイル負荷軽減
+    const viewport = page.getViewport({ scale: fitScale * dpr });
 
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  canvas.style.width = `${viewport.width / dpr}px`;
-  canvas.style.height = `${viewport.height / dpr}px`;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.width = `${viewport.width / dpr}px`;
+    canvas.style.height = `${viewport.height / dpr}px`;
 
-  const renderContext = {
-    canvasContext: ctx,
-    viewport: viewport
-  };
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    };
 
-  await page.render(renderContext).promise;
-  document.getElementById('pdf-loading-msg').style.display = 'none';
-
-  document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
-  document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
-  document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+    await page.render(renderContext).promise;
+  } catch(e) {
+    console.error("Render page error:", e);
+  } finally {
+    document.getElementById('pdf-loading-msg').style.display = 'none';
+    document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
+    document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
+    document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+  }
 }
 
 function changePdfPage(delta) {
@@ -1222,9 +1265,15 @@ function changePdfPage(delta) {
 
 function closePdfViewModal() {
   currentPdfDoc = null;
+  if (currentBlobUrl) {
+    URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = null;
+  }
   const canvas = document.getElementById('pdf-render-canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
   document.getElementById('pdf-view-modal').classList.add('hidden');
 }
 
@@ -1338,9 +1387,7 @@ async function saveLogs(triggerCloud = true) {
   await idbSaveLogs(logs);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-  } catch (e) {
-    // localStorage容量上限(5MB)時の安全フォールバック（IndexedDBが保持するため問題なし）
-  }
+  } catch (e) {}
   updateMonthFilterOptions();
   renderLogs();
   if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
@@ -1856,7 +1903,6 @@ function renderLogs() {
   });
 }
 
-/* ログ内PDFの安全な呼び出し */
 function openPdfFromLog(logId, field) {
   const item = logs.find(it => it.id === logId);
   if (!item) return;
@@ -1939,7 +1985,6 @@ async function syncWithCloud(silent = false) {
     const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
     const cloudData = await res.json();
     if (Array.isArray(cloudData) && cloudData.length > 0) {
-      // 端末内のPDFバイナリデータを保護しながらマージ
       const localMap = new Map();
       logs.forEach(l => localMap.set(l.id, l));
 
