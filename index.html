@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>日報・学習記録ノート</title>
-<!-- スマホでも外部制限なく動く軽量PDF.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -172,6 +170,7 @@
     display: block;
   }
 
+  /* 添付ファイル（PDF・画像）操作エリア */
   .attach-control-area {
     display: flex;
     align-items: center;
@@ -179,7 +178,7 @@
     margin-bottom: 12px;
     flex-wrap: wrap;
   }
-  .btn-attach-pdf {
+  .btn-attach-file {
     background: #1e293b;
     color: #38bdf8;
     border: 1px dashed #38bdf8;
@@ -192,7 +191,7 @@
     align-items: center;
     gap: 4px;
   }
-  .btn-attach-pdf:hover { background: #334155; }
+  .btn-attach-file:hover { background: #334155; }
   .attach-file-tag {
     background: #0f172a;
     border: 1px solid var(--primary);
@@ -487,7 +486,8 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  .log-pdf-badge {
+  /* 閲覧カード上のファイル添付チップ */
+  .log-file-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -502,7 +502,7 @@
     font-weight: bold;
     transition: background 0.2s;
   }
-  .log-pdf-badge:hover {
+  .log-file-badge:hover {
     background: #0284c7;
     color: #ffffff;
   }
@@ -587,22 +587,22 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* PDFその場閲覧用モーダル（スクロールなしで画面内に全収容） */
-  .pdf-modal-card {
+  /* プレビュー用モーダル（PDF・画像両対応・スクロールなし完全収容） */
+  .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     width: 100%;
     max-width: 720px;
-    height: 90vh;
-    max-height: 90vh;
+    height: 88vh;
+    max-height: 88vh;
     display: flex;
     flex-direction: column;
     padding: 10px 14px;
     box-sizing: border-box;
     overflow: hidden;
   }
-  .pdf-modal-header {
+  .preview-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -611,32 +611,11 @@
     gap: 6px;
     flex-shrink: 0;
   }
-  .pdf-nav-controls {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text-main);
-  }
-  .btn-pdf-nav {
-    background: #334155;
-    color: #f8fafc;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-pdf-nav:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
   .btn-open-external {
     background: transparent;
     border: 1px solid #38bdf8;
     color: #38bdf8;
-    padding: 3px 6px;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: bold;
@@ -645,7 +624,7 @@
     display: inline-flex;
     align-items: center;
   }
-  .pdf-canvas-container {
+  .preview-container {
     flex: 1;
     width: 100%;
     height: 100%;
@@ -658,18 +637,30 @@
     overflow: hidden;
     position: relative;
   }
-  #pdf-render-canvas {
+  /* 画像：スクロールせず画面内に縦横フィット */
+  #modal-preview-image {
     max-width: 100%;
     max-height: 100%;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    object-fit: contain;
     border-radius: 4px;
-    display: block;
   }
-  .pdf-loading-msg {
-    position: absolute;
-    color: #38bdf8;
-    font-size: 13px;
-    font-weight: bold;
+  /* PDF：スマホネイティブ表示オブジェクト */
+  #modal-preview-pdf-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 4px;
+    background: #fff;
+  }
+  .pdf-fallback-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    color: #cbd5e1;
+    padding: 20px;
+    text-align: center;
   }
 
   .footer-actions {
@@ -718,7 +709,7 @@
     .qa-q { color: #be123c !important; }
     .qa-a { color: #047857 !important; }
     .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
-    .log-pdf-badge { color: #0284c7 !important; border: 1px solid #ccc !important; background: #fff !important; }
+    .log-file-badge { color: #0284c7 !important; border: 1px solid #ccc !important; background: #fff !important; }
   }
 </style>
 </head>
@@ -773,11 +764,11 @@
     </div>
     <div id="input-tasks" class="rich-editor" contenteditable="true" placeholder="業務内容を入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-pdf">
-        📎 PDF添付
-        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'tasks')">
+      <label class="btn-attach-file">
+        📎 ファイル添付 (PDF/画像)
+        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'tasks')">
       </label>
-      <div id="new-tasks-pdf-preview"></div>
+      <div id="new-tasks-file-preview"></div>
     </div>
     
     <!-- 💡 学習内容 -->
@@ -796,11 +787,11 @@
     </div>
     <div id="input-detail" class="rich-editor" contenteditable="true" placeholder="学習内容を入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-pdf">
-        📎 PDF添付
-        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'detail')">
+      <label class="btn-attach-file">
+        📎 ファイル添付 (PDF/画像)
+        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'detail')">
       </label>
-      <div id="new-detail-pdf-preview"></div>
+      <div id="new-detail-file-preview"></div>
     </div>
 
     <!-- ❓ 疑問点 -->
@@ -834,11 +825,11 @@
     </div>
     <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
     <div class="attach-control-area">
-      <label class="btn-attach-pdf">
-        📎 PDF添付
-        <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, 'new', 'memo')">
+      <label class="btn-attach-file">
+        📎 ファイル添付 (PDF/画像)
+        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, 'new', 'memo')">
       </label>
-      <div id="new-memo-pdf-preview"></div>
+      <div id="new-memo-file-preview"></div>
     </div>
     
     <div class="form-status" id="form-status"></div>
@@ -889,7 +880,7 @@
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
       Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでテキストデータを同期できます。<br>
-      <span style="color:#38bdf8; font-size:11px;">※添付PDF本体は端末内（IndexedDB）に安全に完全保存されます。</span>
+      <span style="color:#38bdf8; font-size:11px;">※容量の大きい添付ファイル本体は端末内（IndexedDB）に安全に完全保存されます。</span>
     </p>
     <input type="text" id="gas-url-input" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
     <div class="modal-actions">
@@ -899,24 +890,27 @@
   </div>
 </div>
 
-<!-- スマホ対応・スクロールなし完全収容PDF閲覧モーダル -->
-<div class="modal-overlay hidden" id="pdf-view-modal">
-  <div class="pdf-modal-card">
-    <div class="pdf-modal-header">
-      <span id="pdf-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:45%; font-size:13px; font-weight:bold;">📄 PDF</span>
-      <div class="pdf-nav-controls">
-        <button type="button" class="btn-pdf-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
-        <span id="pdf-page-num-display" style="font-weight:bold; min-width:40px; text-align:center;">1 / 1</span>
-        <button type="button" class="btn-pdf-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
-      </div>
+<!-- スマホ・PC完全対応：プレビュー用モーダル（PDF・画像両対応） -->
+<div class="modal-overlay hidden" id="file-preview-modal">
+  <div class="preview-modal-card">
+    <div class="preview-modal-header">
+      <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:65%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
       <div style="display:flex; align-items:center; gap:6px;">
-        <a id="btn-native-view" class="btn-open-external" target="_blank" rel="noopener">別窓</a>
-        <button class="modal-close" onclick="closePdfViewModal()">✕</button>
+        <a id="btn-external-view" class="btn-open-external" target="_blank" rel="noopener">別窓で開く</a>
+        <button class="modal-close" onclick="closeFilePreviewModal()">✕</button>
       </div>
     </div>
-    <div class="pdf-canvas-container" id="pdf-canvas-container">
-      <div class="pdf-loading-msg" id="pdf-loading-msg">PDFを読み込み中...</div>
-      <canvas id="pdf-render-canvas"></canvas>
+    <div class="preview-container" id="preview-container">
+      <!-- 画像用 -->
+      <img id="modal-preview-image" class="hidden" alt="プレビュー画像">
+      <!-- PDF用（ハイブリッド埋め込み） -->
+      <iframe id="modal-preview-pdf-frame" class="hidden"></iframe>
+      <!-- PDFネイティブ案内用フォールバック -->
+      <div id="pdf-fallback-box" class="pdf-fallback-box hidden">
+        <p style="margin:0; font-size:14px; font-weight:bold;">📄 PDFファイルを読み込みました</p>
+        <p style="margin:0; font-size:12px; color:#94a3b8;">スマホのセキュリティ設定により画面内に表示されない場合は、下のボタンから開いてください。</p>
+        <a id="btn-fallback-open" class="btn-submit" style="text-decoration:none; padding:8px 16px; font-size:13px;" target="_blank" rel="noopener">PDFを全画面で閲覧</a>
+      </div>
     </div>
   </div>
 </div>
@@ -930,19 +924,15 @@ let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
 
-// 新規作成用の添付PDF保持変数
-let newPdfs = { tasks: null, detail: null, memo: null };
-// インライン編集中レコードの添付PDF保持オブジェクト
-let inlinePdfState = { tasks: null, detail: null, memo: null };
+// 新規作成用の添付ファイル保持変数
+let newFiles = { tasks: null, detail: null, memo: null };
+// インライン編集中レコードの添付ファイル保持オブジェクト
+let inlineFileState = { tasks: null, detail: null, memo: null };
 
-// PDF.js 閲覧制御用変数
-let currentPdfDoc = null;
-let currentPdfPage = 1;
-let totalPdfPages = 1;
 let currentBlobUrl = null;
 
 /* ============================================================
-   大容量対応 IndexedDB 永続化エンジン（PDF消失・容量オーバー完全防止）
+   大容量対応 IndexedDB 永続化エンジン（データ消失・容量制限完全防止）
    ============================================================ */
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -1048,119 +1038,7 @@ function cleanAndFormatLegacyText(content) {
   return html;
 }
 
-/* PDF添付のハンドリング (Base64化) */
-function handlePdfUpload(e, mode, field) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.type !== "application/pdf") {
-    alert("PDFファイルのみ添付できます。");
-    return;
-  }
-  if (file.size > 8 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。8MB以下のPDFを添付してください。");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const pdfObj = {
-      name: file.name,
-      size: (file.size / 1024).toFixed(1) + " KB",
-      data: evt.target.result
-    };
-
-    if (mode === 'new') {
-      newPdfs[field] = pdfObj;
-      renderPdfAttachPreview('new', field);
-    } else {
-      inlinePdfState[field] = pdfObj;
-      renderPdfAttachPreview('inline', field, mode);
-    }
-  };
-  reader.readAsDataURL(file);
-  e.target.value = "";
-}
-
-function removeAttachedPdf(mode, field, logId = null) {
-  if (mode === 'new') {
-    newPdfs[field] = null;
-    renderPdfAttachPreview('new', field);
-  } else {
-    inlinePdfState[field] = null;
-    renderPdfAttachPreview('inline', field, logId);
-  }
-}
-
-function renderPdfAttachPreview(mode, field, logId = null) {
-  const containerId = mode === 'new' ? `new-${field}-pdf-preview` : `inline-${field}-pdf-preview-${logId}`;
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  const pdf = mode === 'new' ? newPdfs[field] : inlinePdfState[field];
-  if (!pdf) {
-    container.innerHTML = "";
-    return;
-  }
-
-  container.innerHTML = `
-    <span class="attach-file-tag">
-      📄 <span class="attach-file-name" title="${escapeHtml(pdf.name)}">${escapeHtml(pdf.name)} (${pdf.size})</span>
-      <button type="button" class="attach-del-btn" onclick="removeAttachedPdf('${mode}', '${field}', ${logId})" title="削除">✕</button>
-    </span>
-  `;
-}
-
-/* Q&A用PDF添付のハンドリング */
-function handleQaPdfUpload(e, cardEl) {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.type !== "application/pdf") {
-    alert("PDFファイルのみ添付できます。");
-    return;
-  }
-  if (file.size > 8 * 1024 * 1024) {
-    alert("ファイルサイズが大きすぎます。8MB以下のPDFを添付してください。");
-    return;
-  }
-
-  const reader = new FileReader();
-  reader.onload = function(evt) {
-    const pdfObj = {
-      name: file.name,
-      size: (file.size / 1024).toFixed(1) + " KB",
-      data: evt.target.result
-    };
-    cardEl.dataset.pdfData = JSON.stringify(pdfObj);
-    renderQaPdfPreview(cardEl, pdfObj);
-  };
-  reader.readAsDataURL(file);
-  e.target.value = "";
-}
-
-function removeQaAttachedPdf(btn) {
-  const cardEl = btn.closest('.qa-item-card');
-  if (!cardEl) return;
-  cardEl.dataset.pdfData = "";
-  const previewDiv = cardEl.querySelector('.qa-pdf-preview');
-  if (previewDiv) previewDiv.innerHTML = "";
-}
-
-function renderQaPdfPreview(cardEl, pdfObj) {
-  const previewDiv = cardEl.querySelector('.qa-pdf-preview');
-  if (!previewDiv) return;
-  if (!pdfObj) {
-    previewDiv.innerHTML = "";
-    return;
-  }
-  previewDiv.innerHTML = `
-    <span class="attach-file-tag">
-      📄 <span class="attach-file-name" title="${escapeHtml(pdfObj.name)}">${escapeHtml(pdfObj.name)} (${pdfObj.size})</span>
-      <button type="button" class="attach-del-btn" onclick="removeQaAttachedPdf(this)" title="削除">✕</button>
-    </span>
-  `;
-}
-
-/* Base64 Data URL を安全に Blob に変換するユーティリティ */
+/* Base64 Data URL を安全に Blob に変換 */
 function b64toBlob(dataURI) {
   const parts = dataURI.split(',');
   const byteString = atob(parts[1]);
@@ -1173,108 +1051,181 @@ function b64toBlob(dataURI) {
   return new Blob([ab], { type: mimeString });
 }
 
-/* スマホ対応・画面完全収容プレビュー（Worker不使用＆Blobストリーミング） */
-async function openPdfViewModal(name, dataUri) {
-  document.getElementById('pdf-modal-title').innerText = `📄 ${name}`;
-  document.getElementById('pdf-view-modal').classList.remove('hidden');
-  document.getElementById('pdf-loading-msg').style.display = 'block';
-
-  try {
-    if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-    const blob = b64toBlob(dataUri);
-    currentBlobUrl = URL.createObjectURL(blob);
-
-    // 別窓で開くリンクにもBlob URLをセット
-    const extBtn = document.getElementById('btn-native-view');
-    extBtn.href = currentBlobUrl;
-
-    // スマホでのCORSエラーを回避するため workerSrc をオフにし直接読み込む
-    const loadingTask = pdfjsLib.getDocument({
-      url: currentBlobUrl,
-      disableWorker: true,
-      isEvalSupported: false
-    });
-
-    currentPdfDoc = await loadingTask.promise;
-    totalPdfPages = currentPdfDoc.numPages;
-    currentPdfPage = 1;
-    await renderPdfPage(currentPdfPage);
-  } catch (err) {
-    console.error("PDF preview error:", err);
-    // 万が一Canvas描画に失敗した場合でもスマホ標準ビューアーで確実に開く
-    if (currentBlobUrl) {
-      window.open(currentBlobUrl, '_blank');
-      closePdfViewModal();
-    } else {
-      alert("PDFの表示に失敗しました。");
-      closePdfViewModal();
-    }
+/* ファイル添付（PDF & 画像）ハンドリング */
+function handleFileUpload(e, mode, field) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const isPdf = file.type === "application/pdf";
+  const isImage = file.type.startsWith("image/");
+  if (!isPdf && !isImage) {
+    alert("PDFまたは画像ファイル（JPEG / PNG / WebP 等）のみ添付できます。");
+    return;
   }
-}
+  if (file.size > 10 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。10MB以下のファイルを添付してください。");
+    return;
+  }
 
-async function renderPdfPage(pageNum) {
-  if (!currentPdfDoc) return;
-  document.getElementById('pdf-loading-msg').style.display = 'block';
-  
-  try {
-    const page = await currentPdfDoc.getPage(pageNum);
-    const container = document.getElementById('pdf-canvas-container');
-    const canvas = document.getElementById('pdf-render-canvas');
-    const ctx = canvas.getContext('2d');
-
-    const availWidth = Math.max(container.clientWidth - 16, 200);
-    const availHeight = Math.max(container.clientHeight - 16, 200);
-    const unscaledViewport = page.getViewport({ scale: 1.0 });
-
-    // スクロールなしで画面枠内にぴったり収まる縮尺を計算
-    const scaleX = availWidth / unscaledViewport.width;
-    const scaleY = availHeight / unscaledViewport.height;
-    const fitScale = Math.min(scaleX, scaleY);
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2); // モバイル負荷軽減
-    const viewport = page.getViewport({ scale: fitScale * dpr });
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    canvas.style.width = `${viewport.width / dpr}px`;
-    canvas.style.height = `${viewport.height / dpr}px`;
-
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const fileObj = {
+      name: file.name,
+      type: isPdf ? 'pdf' : 'image',
+      mimeType: file.type,
+      size: (file.size / 1024).toFixed(1) + " KB",
+      data: evt.target.result
     };
 
-    await page.render(renderContext).promise;
-  } catch(e) {
-    console.error("Render page error:", e);
-  } finally {
-    document.getElementById('pdf-loading-msg').style.display = 'none';
-    document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
-    document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
-    document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+    if (mode === 'new') {
+      newFiles[field] = fileObj;
+      renderFileAttachPreview('new', field);
+    } else {
+      inlineFileState[field] = fileObj;
+      renderFileAttachPreview('inline', field, mode);
+    }
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function removeAttachedFile(mode, field, logId = null) {
+  if (mode === 'new') {
+    newFiles[field] = null;
+    renderFileAttachPreview('new', field);
+  } else {
+    inlineFileState[field] = null;
+    renderFileAttachPreview('inline', field, logId);
   }
 }
 
-function changePdfPage(delta) {
-  const target = currentPdfPage + delta;
-  if (target >= 1 && target <= totalPdfPages) {
-    currentPdfPage = target;
-    renderPdfPage(currentPdfPage);
+function renderFileAttachPreview(mode, field, logId = null) {
+  const containerId = mode === 'new' ? `new-${field}-file-preview` : `inline-${field}-file-preview-${logId}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const file = mode === 'new' ? newFiles[field] : inlineFileState[field];
+  if (!file) {
+    container.innerHTML = "";
+    return;
   }
+
+  const icon = file.type === 'image' ? '🖼️' : '📄';
+  container.innerHTML = `
+    <span class="attach-file-tag">
+      ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
+      <button type="button" class="attach-del-btn" onclick="removeAttachedFile('${mode}', '${field}', ${logId})" title="削除">✕</button>
+    </span>
+  `;
 }
 
-function closePdfViewModal() {
-  currentPdfDoc = null;
+/* Q&A用ファイル添付（PDF & 画像）ハンドリング */
+function handleQaFileUpload(e, cardEl) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const isPdf = file.type === "application/pdf";
+  const isImage = file.type.startsWith("image/");
+  if (!isPdf && !isImage) {
+    alert("PDFまたは画像ファイル（JPEG / PNG / WebP 等）のみ添付できます。");
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    alert("ファイルサイズが大きすぎます。10MB以下のファイルを添付してください。");
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    const fileObj = {
+      name: file.name,
+      type: isPdf ? 'pdf' : 'image',
+      mimeType: file.type,
+      size: (file.size / 1024).toFixed(1) + " KB",
+      data: evt.target.result
+    };
+    cardEl.dataset.fileData = JSON.stringify(fileObj);
+    renderQaFilePreview(cardEl, fileObj);
+  };
+  reader.readAsDataURL(file);
+  e.target.value = "";
+}
+
+function removeQaAttachedFile(btn) {
+  const cardEl = btn.closest('.qa-item-card');
+  if (!cardEl) return;
+  cardEl.dataset.fileData = "";
+  const previewDiv = cardEl.querySelector('.qa-file-preview');
+  if (previewDiv) previewDiv.innerHTML = "";
+}
+
+function renderQaFilePreview(cardEl, fileObj) {
+  const previewDiv = cardEl.querySelector('.qa-file-preview');
+  if (!previewDiv) return;
+  if (!fileObj) {
+    previewDiv.innerHTML = "";
+    return;
+  }
+  const icon = fileObj.type === 'image' ? '🖼️️' : '📄';
+  previewDiv.innerHTML = `
+    <span class="attach-file-tag">
+      ${icon} <span class="attach-file-name" title="${escapeHtml(fileObj.name)}">${escapeHtml(fileObj.name)} (${fileObj.size})</span>
+      <button type="button" class="attach-del-btn" onclick="removeQaAttachedFile(this)" title="削除">✕</button>
+    </span>
+  `;
+}
+
+/* スマホ・PC完全対応：ファイルプレビューモーダル（PDF・画像） */
+function openFilePreviewModal(name, dataUri, type) {
+  const modal = document.getElementById('file-preview-modal');
+  const title = document.getElementById('preview-modal-title');
+  const extBtn = document.getElementById('btn-external-view');
+  const fallbackBtn = document.getElementById('btn-fallback-open');
+  const imgEl = document.getElementById('modal-preview-image');
+  const pdfFrame = document.getElementById('modal-preview-pdf-frame');
+  const fallbackBox = document.getElementById('pdf-fallback-box');
+
+  if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+  const blob = b64toBlob(dataUri);
+  currentBlobUrl = URL.createObjectURL(blob);
+
+  const icon = type === 'image' ? '🖼️' : '📄';
+  title.innerText = `${icon} ${name}`;
+  extBtn.href = currentBlobUrl;
+  fallbackBtn.href = currentBlobUrl;
+
+  if (type === 'image') {
+    pdfFrame.classList.add('hidden');
+    fallbackBox.classList.add('hidden');
+    imgEl.src = currentBlobUrl;
+    imgEl.classList.remove('hidden');
+  } else {
+    imgEl.classList.add('hidden');
+    // スマホSafari/Chromeでの描画判定
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+      pdfFrame.classList.add('hidden');
+      fallbackBox.classList.remove('hidden');
+    } else {
+      fallbackBox.classList.add('hidden');
+      pdfFrame.src = currentBlobUrl;
+      pdfFrame.classList.remove('hidden');
+    }
+  }
+
+  modal.classList.remove('hidden');
+}
+
+function closeFilePreviewModal() {
+  const modal = document.getElementById('file-preview-modal');
+  const imgEl = document.getElementById('modal-preview-image');
+  const pdfFrame = document.getElementById('modal-preview-pdf-frame');
+  
+  imgEl.src = "";
+  pdfFrame.src = "";
   if (currentBlobUrl) {
     URL.revokeObjectURL(currentBlobUrl);
     currentBlobUrl = null;
   }
-  const canvas = document.getElementById('pdf-render-canvas');
-  if (canvas) {
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
-  document.getElementById('pdf-view-modal').classList.add('hidden');
+  modal.classList.add('hidden');
 }
 
 window.onload = async function() {
@@ -1333,12 +1284,12 @@ function onQuestionSelectChanged() {
   }
 }
 
-function addQaInputRow(qVal = "", aVal = "", pdfObj = null) {
+function addQaInputRow(qVal = "", aVal = "", fileObj = null) {
   const container = document.getElementById('qa-list-container');
   const itemDiv = document.createElement('div');
   itemDiv.className = 'qa-item-card';
-  if (pdfObj) {
-    itemDiv.dataset.pdfData = JSON.stringify(pdfObj);
+  if (fileObj) {
+    itemDiv.dataset.fileData = JSON.stringify(fileObj);
   }
   itemDiv.innerHTML = `
     <button type="button" class="btn-qa-del" onclick="removeQaInputRow(this)">✕</button>
@@ -1347,16 +1298,16 @@ function addQaInputRow(qVal = "", aVal = "", pdfObj = null) {
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
     <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-      <label class="btn-attach-pdf">
-        📎 PDF添付
-        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
+      <label class="btn-attach-file">
+        📎 添付 (PDF/画像)
+        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
       </label>
-      <div class="qa-pdf-preview"></div>
+      <div class="qa-file-preview"></div>
     </div>
   `;
   container.appendChild(itemDiv);
   itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-  if (pdfObj) renderQaPdfPreview(itemDiv, pdfObj);
+  if (fileObj) renderQaFilePreview(itemDiv, fileObj);
 }
 
 function removeQaInputRow(btn) {
@@ -1382,7 +1333,7 @@ async function loadLogs() {
   renderLogs();
 }
 
-/* 端末内（IndexedDB）へ大容量データを完全永続化し、クラウドへは安全に送信 */
+/* 端末内（IndexedDB）へ大容量データを完全永続化 */
 async function saveLogs(triggerCloud = true) {
   await idbSaveLogs(logs);
   try {
@@ -1412,10 +1363,10 @@ function resetFormForNew() {
   document.getElementById('qa-inputs-area').classList.add('hidden');
   document.getElementById('input-memo').innerHTML = '';
   
-  newPdfs = { tasks: null, detail: null, memo: null };
-  renderPdfAttachPreview('new', 'tasks');
-  renderPdfAttachPreview('new', 'detail');
-  renderPdfAttachPreview('new', 'memo');
+  newFiles = { tasks: null, detail: null, memo: null };
+  renderFileAttachPreview('new', 'tasks');
+  renderFileAttachPreview('new', 'detail');
+  renderFileAttachPreview('new', 'memo');
 
   const selectedDate = document.getElementById('input-date').value;
   updateDateDisplay('input-date', 'date-display-text');
@@ -1448,17 +1399,17 @@ function saveNewLog() {
     cards.forEach(card => {
       const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
       const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
-      let pdf = null;
-      if (card.dataset.pdfData) {
-        try { pdf = JSON.parse(card.dataset.pdfData); } catch(err) { pdf = null; }
+      let file = null;
+      if (card.dataset.fileData) {
+        try { file = JSON.parse(card.dataset.fileData); } catch(err) { file = null; }
       }
-      if (q || a || pdf) qaList.push({ q, a, pdf });
+      if (q || a || file) qaList.push({ q, a, file });
     });
   }
 
   const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
   const emptyRegex = /^(<br>|\s)*$/;
-  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !newPdfs.tasks && !newPdfs.detail && !newPdfs.memo) {
+  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !newFiles.tasks && !newFiles.detail && !newFiles.memo) {
     return alert('項目を入力してください');
   }
 
@@ -1469,12 +1420,12 @@ function saveNewLog() {
     tag: tag,
     person: person,
     tasks: emptyRegex.test(tasks) ? "" : tasks,
-    tasksPdf: newPdfs.tasks || null,
+    tasksFile: newFiles.tasks || null,
     detail: emptyRegex.test(detail) ? "" : detail,
-    detailPdf: newPdfs.detail || null,
+    detailFile: newFiles.detail || null,
     qaList: qaList,
     memo: emptyRegex.test(memo) ? "" : memo,
-    memoPdf: newPdfs.memo || null
+    memoFile: newFiles.memo || null
   };
 
   logs.unshift(newLog);
@@ -1506,25 +1457,25 @@ function startInlineEdit(id) {
   editingInlineLogId = id;
   const item = logs.find(it => it.id === id);
   if (item) {
-    inlinePdfState = {
-      tasks: item.tasksPdf || null,
-      detail: item.detailPdf || null,
-      memo: item.memoPdf || null
+    inlineFileState = {
+      tasks: item.tasksFile || item.tasksPdf || null,
+      detail: item.detailFile || item.detailPdf || null,
+      memo: item.memoFile || item.memoPdf || null
     };
   }
   renderLogs();
   const form = document.getElementById(`inline-form-${id}`);
   if (form) {
     form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
-    renderPdfAttachPreview('inline', 'tasks', id);
-    renderPdfAttachPreview('inline', 'detail', id);
-    renderPdfAttachPreview('inline', 'memo', id);
+    renderFileAttachPreview('inline', 'tasks', id);
+    renderFileAttachPreview('inline', 'detail', id);
+    renderFileAttachPreview('inline', 'memo', id);
 
     form.querySelectorAll('.qa-item-card').forEach(cardEl => {
-      if (cardEl.dataset.pdfData) {
+      if (cardEl.dataset.fileData) {
         try {
-          const pdfObj = JSON.parse(cardEl.dataset.pdfData);
-          renderQaPdfPreview(cardEl, pdfObj);
+          const fileObj = JSON.parse(cardEl.dataset.fileData);
+          renderQaFilePreview(cardEl, fileObj);
         } catch(err) {}
       }
     });
@@ -1533,7 +1484,7 @@ function startInlineEdit(id) {
 
 function cancelInlineEdit() {
   editingInlineLogId = null;
-  inlinePdfState = { tasks: null, detail: null, memo: null };
+  inlineFileState = { tasks: null, detail: null, memo: null };
   renderLogs();
 }
 
@@ -1549,11 +1500,11 @@ function addInlineQaRow(containerId) {
     <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
     <div class="rich-editor inline-qa-a" contenteditable="true"></div>
     <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-      <label class="btn-attach-pdf">
-        📎 PDF添付
-        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
+      <label class="btn-attach-file">
+        📎 添付 (PDF/画像)
+        <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
       </label>
-      <div class="qa-pdf-preview"></div>
+      <div class="qa-file-preview"></div>
     </div>
   `;
   container.appendChild(itemDiv);
@@ -1589,11 +1540,11 @@ function saveInlineEdit(id) {
   qaCards.forEach(card => {
     const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
     const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
-    let pdf = null;
-    if (card.dataset.pdfData) {
-      try { pdf = JSON.parse(card.dataset.pdfData); } catch(err) { pdf = null; }
+    let file = null;
+    if (card.dataset.fileData) {
+      try { file = JSON.parse(card.dataset.fileData); } catch(err) { file = null; }
     }
-    if (q || a || pdf) qaList.push({ q, a, pdf });
+    if (q || a || file) qaList.push({ q, a, file });
   });
 
   logs[idx] = {
@@ -1604,16 +1555,16 @@ function saveInlineEdit(id) {
     tag: tag,
     person: person,
     tasks: tasks,
-    tasksPdf: inlinePdfState.tasks || null,
+    tasksFile: inlineFileState.tasks || null,
     detail: detail,
-    detailPdf: inlinePdfState.detail || null,
+    detailFile: inlineFileState.detail || null,
     qaList: qaList,
     memo: memo,
-    memoPdf: inlinePdfState.memo || null
+    memoFile: inlineFileState.memo || null
   };
 
   editingInlineLogId = null;
-  inlinePdfState = { tasks: null, detail: null, memo: null };
+  inlineFileState = { tasks: null, detail: null, memo: null };
   saveLogs(true);
 }
 
@@ -1690,6 +1641,11 @@ function renderLogs() {
       const qaList = item.qaList || [];
       const isFirst = (index === 0), isLast = (index === itemsOnDay.length - 1);
 
+      // 旧フォーマット(Pdf)との互換
+      const tasksFile = item.tasksFile || item.tasksPdf;
+      const detailFile = item.detailFile || item.detailPdf;
+      const memoFile = item.memoFile || item.memoPdf;
+
       if (isEditingThis) {
         itemDiv.classList.add('is-editing');
         const inlineQaContainerId = `inline-qa-list-${item.id}`;
@@ -1739,11 +1695,11 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-pdf">
-                📎 PDF添付
-                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'tasks')">
+              <label class="btn-attach-file">
+                📎 添付 (PDF/画像)
+                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'tasks')">
               </label>
-              <div id="inline-tasks-pdf-preview-${item.id}"></div>
+              <div id="inline-tasks-file-preview-${item.id}"></div>
             </div>
 
             <!-- 学習内容編集 -->
@@ -1762,33 +1718,36 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-pdf">
-                📎 PDF添付
-                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'detail')">
+              <label class="btn-attach-file">
+                📎 添付 (PDF/画像)
+                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'detail')">
               </label>
-              <div id="inline-detail-pdf-preview-${item.id}"></div>
+              <div id="inline-detail-file-preview-${item.id}"></div>
             </div>
 
-            <!-- Q&A編集 (各項目PDF添付対応) -->
+            <!-- Q&A編集 -->
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
               <div class="qa-list-container" id="${inlineQaContainerId}">
-                ${qaList.map(qa => `
-                  <div class="qa-item-card" data-pdf-data='${qa.pdf ? escapeHtml(JSON.stringify(qa.pdf)) : ""}'>
-                    <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
-                    <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
-                    <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
-                    <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
-                    <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
-                    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
-                      <label class="btn-attach-pdf">
-                        📎 PDF添付
-                        <input type="file" accept="application/pdf" style="display:none;" onchange="handleQaPdfUpload(event, this.closest('.qa-item-card'))">
-                      </label>
-                      <div class="qa-pdf-preview"></div>
+                ${qaList.map(qa => {
+                  const qFile = qa.file || qa.pdf;
+                  return `
+                    <div class="qa-item-card" data-file-data='${qFile ? escapeHtml(JSON.stringify(qFile)) : ""}'>
+                      <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
+                      <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
+                      <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
+                      <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
+                      <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
+                      <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+                        <label class="btn-attach-file">
+                          📎 添付 (PDF/画像)
+                          <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleQaFileUpload(event, this.closest('.qa-item-card'))">
+                        </label>
+                        <div class="qa-file-preview"></div>
+                      </div>
                     </div>
-                  </div>
-                `).join('')}
+                  `;
+                }).join('')}
               </div>
               <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
             </div>
@@ -1809,11 +1768,11 @@ function renderLogs() {
             </div>
             <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
             <div class="attach-control-area">
-              <label class="btn-attach-pdf">
-                📎 PDF添付
-                <input type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event, ${item.id}, 'memo')">
+              <label class="btn-attach-file">
+                📎 添付 (PDF/画像)
+                <input type="file" accept="application/pdf,image/*" style="display:none;" onchange="handleFileUpload(event, ${item.id}, 'memo')">
               </label>
-              <div id="inline-memo-pdf-preview-${item.id}"></div>
+              <div id="inline-memo-file-preview-${item.id}"></div>
             </div>
 
             <div class="inline-btn-group">
@@ -1841,25 +1800,25 @@ function renderLogs() {
             </div>
           </div>
 
-          ${item.tasks || item.tasksPdf ? `
+          ${item.tasks || tasksFile ? `
             <div class="log-section-label">📌 業務内容</div>
             ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
-            ${item.tasksPdf ? `
+            ${tasksFile ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "tasks")'>
-                  📄 ${escapeHtml(item.tasksPdf.name)} (${item.tasksPdf.size})
+                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasks")'>
+                  ${tasksFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(tasksFile.name)} (${tasksFile.size})
                 </button>
               </div>
             ` : ''}
           ` : ''}
 
-          ${item.detail || item.detailPdf ? `
+          ${item.detail || detailFile ? `
             <div class="log-section-label">💡 学習内容</div>
             ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
-            ${item.detailPdf ? `
+            ${detailFile ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "detail")'>
-                  📄 ${escapeHtml(item.detailPdf.name)} (${item.detailPdf.size})
+                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detail")'>
+                  ${detailFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(detailFile.name)} (${detailFile.size})
                 </button>
               </div>
             ` : ''}
@@ -1868,29 +1827,31 @@ function renderLogs() {
           ${qaList.length > 0 ? `
             <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
             <div class="log-qa-group">
-              ${qaList.map((qa, i) => `
-                <div class="log-qa-single">
-                  ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
-                  ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
-                  ${qa.pdf ? `
-                    <div style="margin-top:4px;">
-                      <button type="button" class="log-pdf-badge" onclick='openPdfFromQa(${item.id},${i})'>
-                        📄 ${escapeHtml(qa.pdf.name)} (${qa.pdf.size})
-                      </button>
-                    </div>
-                  ` : ''}
-                </div>
-              `).join('')}
+              ${qaList.map((qa, i) => {
+                const qFile = qa.file || qa.pdf;
+                return `
+                  <div class="log-qa-single">
+                    ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
+                    ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
+                    ${qFile ? `
+                      <div style="margin-top:4px;">
+                        <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id}, ${i})'>${qFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qFile.name)} (${qFile.size})
+                        </button>
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+              }).join('')}
             </div>
           ` : ''}
 
-          ${item.memo || item.memoPdf ? `
+          ${item.memo || memoFile ? `
             <div class="log-section-label">📋 メモ</div>
             ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
-            ${item.memoPdf ? `
+            ${memoFile ? `
               <div>
-                <button type="button" class="log-pdf-badge" onclick='openPdfFromLog(${item.id}, "memo")'>
-                  📄 ${escapeHtml(item.memoPdf.name)} (${item.memoPdf.size})
+                <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memo")'>
+                  ${memoFile.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(memoFile.name)} (${memoFile.size})
                 </button>
               </div>
             ` : ''}
@@ -1903,21 +1864,21 @@ function renderLogs() {
   });
 }
 
-function openPdfFromLog(logId, field) {
+function openFileFromLog(logId, field) {
   const item = logs.find(it => it.id === logId);
   if (!item) return;
-  const pdfObj = item[`${field}Pdf`];
-  if (pdfObj && pdfObj.data) {
-    openPdfViewModal(pdfObj.name, pdfObj.data);
+  const fileObj = item[`${field}File`] || item[`${field}Pdf`];
+  if (fileObj && fileObj.data) {
+    openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
   }
 }
 
-function openPdfFromQa(logId, qaIndex) {
+function openFileFromQa(logId, qaIndex) {
   const item = logs.find(it => it.id === logId);
   if (!item || !item.qaList || !item.qaList[qaIndex]) return;
-  const pdfObj = item.qaList[qaIndex].pdf;
-  if (pdfObj && pdfObj.data) {
-    openPdfViewModal(pdfObj.name, pdfObj.data);
+  const fileObj = item.qaList[qaIndex].file || item.qaList[qaIndex].pdf;
+  if (fileObj && fileObj.data) {
+    openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
   }
 }
 
@@ -1942,12 +1903,16 @@ function saveGasUrlSetting() {
 function getCloudSafeLogs() {
   return logs.map(item => {
     const clone = { ...item };
+    if (clone.tasksFile) clone.tasksFile = { name: clone.tasksFile.name, size: clone.tasksFile.size, type: clone.tasksFile.type };
     if (clone.tasksPdf) clone.tasksPdf = { name: clone.tasksPdf.name, size: clone.tasksPdf.size };
+    if (clone.detailFile) clone.detailFile = { name: clone.detailFile.name, size: clone.detailFile.size, type: clone.detailFile.type };
     if (clone.detailPdf) clone.detailPdf = { name: clone.detailPdf.name, size: clone.detailPdf.size };
+    if (clone.memoFile) clone.memoFile = { name: clone.memoFile.name, size: clone.memoFile.size, type: clone.memoFile.type };
     if (clone.memoPdf) clone.memoPdf = { name: clone.memoPdf.name, size: clone.memoPdf.size };
     if (Array.isArray(clone.qaList)) {
       clone.qaList = clone.qaList.map(qa => {
         const qaClone = { ...qa };
+        if (qaClone.file) qaClone.file = { name: qaClone.file.name, size: qaClone.file.size, type: qaClone.file.type };
         if (qaClone.pdf) qaClone.pdf = { name: qaClone.pdf.name, size: qaClone.pdf.size };
         return qaClone;
       });
@@ -1991,13 +1956,27 @@ async function syncWithCloud(silent = false) {
       logs = cloudData.map(cItem => {
         const localItem = localMap.get(cItem.id);
         if (localItem) {
-          if (localItem.tasksPdf && localItem.tasksPdf.data && cItem.tasksPdf) cItem.tasksPdf.data = localItem.tasksPdf.data;
-          if (localItem.detailPdf && localItem.detailPdf.data && cItem.detailPdf) cItem.detailPdf.data = localItem.detailPdf.data;
-          if (localItem.memoPdf && localItem.memoPdf.data && cItem.memoPdf) cItem.memoPdf.data = localItem.memoPdf.data;
+          const lTasks = localItem.tasksFile || localItem.tasksPdf;
+          if (lTasks && lTasks.data && (cItem.tasksFile || cItem.tasksPdf)) {
+            if (cItem.tasksFile) cItem.tasksFile.data = lTasks.data;
+            if (cItem.tasksPdf) cItem.tasksPdf.data = lTasks.data;
+          }
+          const lDetail = localItem.detailFile || localItem.detailPdf;
+          if (lDetail && lDetail.data && (cItem.detailFile || cItem.detailPdf)) {
+            if (cItem.detailFile) cItem.detailFile.data = lDetail.data;
+            if (cItem.detailPdf) cItem.detailPdf.data = lDetail.data;
+          }
+          const lMemo = localItem.memoFile || localItem.memoPdf;
+          if (lMemo && lMemo.data && (cItem.memoFile || cItem.memoPdf)) {
+            if (cItem.memoFile) cItem.memoFile.data = lMemo.data;
+            if (cItem.memoPdf) cItem.memoPdf.data = lMemo.data;
+          }
           if (Array.isArray(cItem.qaList) && Array.isArray(localItem.qaList)) {
             cItem.qaList.forEach((qa, idx) => {
-              if (localItem.qaList[idx] && localItem.qaList[idx].pdf && localItem.qaList[idx].pdf.data && qa.pdf) {
-                qa.pdf.data = localItem.qaList[idx].pdf.data;
+              const lQaFile = localItem.qaList[idx] && (localItem.qaList[idx].file || localItem.qaList[idx].pdf);
+              if (lQaFile && lQaFile.data) {
+                if (qa.file) qa.file.data = lQaFile.data;
+                if (qa.pdf) qa.pdf.data = lQaFile.data;
               }
             });
           }
