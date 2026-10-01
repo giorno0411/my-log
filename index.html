@@ -87,6 +87,26 @@
     width: 100%;
   }
 
+  .lock-setting-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #131d2e;
+    border: 1px dashed var(--card-border);
+    padding: 6px 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #cbd5e1;
+    cursor: pointer;
+  }
+  .lock-setting-row input[type="checkbox"] {
+    accent-color: #f43f5e;
+    cursor: pointer;
+    width: 15px;
+    height: 15px;
+  }
+
   .input-label {
     font-size: 12px;
     color: var(--text-sub);
@@ -172,7 +192,6 @@
     display: block;
   }
 
-  /* 添付ファイル（複数対応）操作エリア */
   .attach-control-area {
     display: flex;
     flex-direction: column;
@@ -448,6 +467,7 @@
   .log-place { background: #4c1d95; color: #c4b5fd; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-tag { background: #334155; color: #38bdf8; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
+  .log-lock-badge { background: #881337; color: #fda4af; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
   
@@ -497,6 +517,33 @@
     border-left: 3px solid var(--gray-badge);
   }
 
+  /* ロック中カードの表示 */
+  .locked-card-cover {
+    background: #131d2e;
+    border: 1px dashed #f43f5e;
+    border-radius: 6px;
+    padding: 16px 12px;
+    text-align: center;
+    margin-top: 6px;
+  }
+  .locked-card-msg {
+    font-size: 13px;
+    color: #fda4af;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+  .btn-unlock-trigger {
+    background: #be123c;
+    color: #fff;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .btn-unlock-trigger:hover { background: #e11d48; }
+
   /* 閲覧カード上のファイル添付チップコンテナ */
   .log-file-badges-wrap {
     display: flex;
@@ -526,6 +573,7 @@
   .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
   .btn-del:hover { color: var(--danger); }
+  .btn-relock { background: #475569; color: #f8fafc; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
   .inline-top-bar {
     display: flex;
@@ -603,7 +651,7 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビュー用モーダル（PDF・画像両対応・画面いっぱいに表示） */
+  /* プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） */
   .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -661,14 +709,12 @@
     overflow: hidden;
     position: relative;
   }
-  /* 画像：枠いっぱいに収容 */
   #modal-preview-image {
     max-width: 100%;
     max-height: 100%;
     object-fit: contain;
     border-radius: 4px;
   }
-  /* PDFキャンバス：画面内スクロールなしで最大表示 */
   #modal-preview-pdf-canvas {
     max-width: 100%;
     max-height: 100%;
@@ -766,6 +812,12 @@
       <input type="text" id="input-tag" placeholder="タグ (例: 見積)">
       <input type="text" id="input-person" placeholder="🗣️ 話した人">
     </div>
+
+    <!-- パスワード保護設定 -->
+    <label class="lock-setting-row">
+      <input type="checkbox" id="input-is-locked">
+      <span>🔒 パスワード保護を有効にする（閲覧時にパスワードが必要になります）</span>
+    </label>
     
     <!-- 📌 業務内容 -->
     <span class="input-label">📌 業務内容</span>
@@ -915,12 +967,29 @@
   </div>
 </div>
 
+<!-- パスワード解除入力モーダル -->
+<div class="modal-overlay hidden" id="password-modal">
+  <div class="modal-card">
+    <div class="modal-title">
+      <span>🔒 パスワード認証</span>
+      <button class="modal-close" onclick="closePasswordModal()">✕</button>
+    </div>
+    <p style="font-size: 13px; color: var(--text-sub); margin: 0 0 8px 0;">
+      この記録は保護されています。パスワードを入力してください。
+    </p>
+    <input type="password" id="password-input" class="modal-input" placeholder="パスワードを入力" onkeydown="if(event.key==='Enter') submitPasswordUnlock()">
+    <div class="modal-actions">
+      <button class="btn-new" onclick="closePasswordModal()">キャンセル</button>
+      <button class="btn-submit" style="flex:none; padding:8px 16px; background:#f43f5e;" onclick="submitPasswordUnlock()">解除する</button>
+    </div>
+  </div>
+</div>
+
 <!-- プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
       <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
-      <!-- PDF用ページ送り -->
       <div id="pdf-page-controls" class="pdf-page-controls hidden">
         <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
         <span id="pdf-page-num-display" style="font-weight:bold; min-width:36px; text-align:center;">1 / 1</span>
@@ -930,9 +999,7 @@
     </div>
     <div class="preview-container" id="preview-container">
       <div class="pdf-loading-msg hidden" id="pdf-loading-msg">読み込み中...</div>
-      <!-- 画像表示用 -->
       <img id="modal-preview-image" class="hidden" alt="プレビュー画像">
-      <!-- PDFスクロールなし・枠内最大フィット表示用Canvas -->
       <canvas id="modal-preview-pdf-canvas" class="hidden"></canvas>
     </div>
   </div>
@@ -943,9 +1010,16 @@ const STORAGE_KEY = "daily_work_learning_logs_main";
 const GAS_URL_KEY = "daily_work_learning_gas_url";
 const DB_NAME = "DailyWorkLearningLogDB";
 const STORE_NAME = "logs_store";
+const SECRET_PASSWORD = "zzykiSAida0@"; // 指定パスワード
+
 let logs = [];
 let editingInlineLogId = null;
 const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+
+// 一時解除された記録IDの管理Set
+const unlockedLogIds = new Set();
+let pendingUnlockLogId = null;
+let pendingActionType = null; // 'view' or 'edit' or 'delete'
 
 // 新規作成用の添付ファイル配列保持
 let newFiles = { tasks: [], detail: [], memo: [] };
@@ -1085,6 +1159,50 @@ function b64toUint8Array(dataURI) {
     bytes[i] = binaryStr.charCodeAt(i);
   }
   return bytes;
+}
+
+/* ============================================================
+   パスワード認証モーダル制御
+   ============================================================ */
+function requestUnlockPassword(logId, action = 'view') {
+  pendingUnlockLogId = logId;
+  pendingActionType = action;
+  document.getElementById('password-input').value = "";
+  document.getElementById('password-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('password-input').focus(), 100);
+}
+
+function closePasswordModal() {
+  pendingUnlockLogId = null;
+  pendingActionType = null;
+  document.getElementById('password-modal').classList.add('hidden');
+}
+
+function submitPasswordUnlock() {
+  const inputPass = document.getElementById('password-input').value;
+  if (inputPass === SECRET_PASSWORD) {
+    const targetId = pendingUnlockLogId;
+    const action = pendingActionType;
+    unlockedLogIds.add(targetId);
+    closePasswordModal();
+
+    if (action === 'edit') {
+      startInlineEdit(targetId);
+    } else if (action === 'delete') {
+      deleteLog(targetId);
+    } else {
+      renderLogs();
+    }
+  } else {
+    alert("パスワードが正しくありません。");
+    document.getElementById('password-input').value = "";
+    document.getElementById('password-input').focus();
+  }
+}
+
+function lockLog(id) {
+  unlockedLogIds.delete(id);
+  renderLogs();
 }
 
 /* ファイル複数添付ハンドリング */
@@ -1247,14 +1365,12 @@ async function openFilePreviewModal(name, dataUri, type) {
   modal.classList.remove('hidden');
 
   if (!isPdf) {
-    // 画像プレビュー：スクロール不要で枠いっぱいに表示
     pageControls.classList.add('hidden');
     canvas.classList.add('hidden');
     loadingMsg.classList.add('hidden');
     imgEl.src = dataUri;
     imgEl.classList.remove('hidden');
   } else {
-    // PDFプレビュー：PDF.js Canvasレンダリングで画面枠いっぱいにスクロールなし表示
     imgEl.classList.add('hidden');
     canvas.classList.remove('hidden');
     pageControls.classList.remove('hidden');
@@ -1262,8 +1378,6 @@ async function openFilePreviewModal(name, dataUri, type) {
 
     try {
       const pdfDataBytes = b64toUint8Array(dataUri);
-      
-      // スマホのWorker通信ブロックを防ぐ直接レンダリング設定
       const loadingTask = pdfjsLib.getDocument({
         data: pdfDataBytes,
         disableWorker: true,
@@ -1273,13 +1387,11 @@ async function openFilePreviewModal(name, dataUri, type) {
       totalPdfPages = currentPdfDoc.numPages;
       currentPdfPage = 1;
       
-      // モーダルが完全に表示されてコンテナの寸法が確定した後にレンダリング（極小描画防止）
       requestAnimationFrame(() => {
         renderPdfCanvasPage(currentPdfPage);
       });
     } catch (err) {
-      console.error("PDF Canvas描画失敗。スマホ標準ビューアーへ自動切替:", err);
-      // 万一Canvas生成が制限されたスマホ環境では、OSネイティブのPDF機能で全画面即時表示
+      console.error("PDF Canvas描画失敗:", err);
       try {
         const blob = b64toBlob(dataUri);
         const blobUrl = URL.createObjectURL(blob);
@@ -1305,12 +1417,10 @@ async function renderPdfCanvasPage(pageNum) {
     const canvas = document.getElementById('modal-preview-pdf-canvas');
     const ctx = canvas.getContext('2d');
 
-    // プレビューコンテナの正確な有効ピクセルサイズ
     const availWidth = Math.max(container.clientWidth, 200);
     const availHeight = Math.max(container.clientHeight, 200);
     const unscaledViewport = page.getViewport({ scale: 1.0 });
 
-    // スクロールなしで画面枠「いっぱいに映る」最大スケール（縦横比維持）を計算
     const scaleX = availWidth / unscaledViewport.width;
     const scaleY = availHeight / unscaledViewport.height;
     const fitScale = Math.min(scaleX, scaleY);
@@ -1320,7 +1430,6 @@ async function renderPdfCanvasPage(pageNum) {
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    // 表示サイズ（CSS）をコンテナいっぱいにフィット
     canvas.style.width = `${viewport.width / dpr}px`;
     canvas.style.height = `${viewport.height / dpr}px`;
 
@@ -1502,6 +1611,7 @@ function resetFormForNew() {
   document.getElementById('input-place').value = '';
   document.getElementById('input-tag').value = '';
   document.getElementById('input-person').value = '';
+  document.getElementById('input-is-locked').checked = false;
   document.getElementById('input-tasks').innerHTML = '';
   document.getElementById('input-detail').innerHTML = '';
   document.getElementById('has-question-select').value = 'none';
@@ -1535,6 +1645,7 @@ function saveNewLog() {
   const place = document.getElementById('input-place').value.trim();
   const tag = document.getElementById('input-tag').value.trim() || "業務";
   const person = document.getElementById('input-person').value.trim();
+  const isLocked = document.getElementById('input-is-locked').checked;
   const tasks = cleanEditorHTML(document.getElementById('input-tasks').innerHTML);
   const detail = cleanEditorHTML(document.getElementById('input-detail').innerHTML);
   
@@ -1566,6 +1677,7 @@ function saveNewLog() {
     place: place,
     tag: tag,
     person: person,
+    isLocked: isLocked,
     tasks: emptyRegex.test(tasks) ? "" : tasks,
     tasksFiles: newFiles.tasks || [],
     detail: emptyRegex.test(detail) ? "" : detail,
@@ -1581,9 +1693,14 @@ function saveNewLog() {
 }
 
 function deleteLog(id) {
+  const item = logs.find(it => it.id === id);
+  if (item && item.isLocked && !unlockedLogIds.has(id)) {
+    return requestUnlockPassword(id, 'delete');
+  }
   if (confirm('この記録を削除しますか？')) {
     logs = logs.filter(item => item.id !== id);
     if (editingInlineLogId === id) editingInlineLogId = null;
+    unlockedLogIds.delete(id);
     saveLogs(true);
   }
 }
@@ -1601,8 +1718,12 @@ function moveLogOrder(id, date, direction) {
 }
 
 function startInlineEdit(id) {
-  editingInlineLogId = id;
   const item = logs.find(it => it.id === id);
+  if (item && item.isLocked && !unlockedLogIds.has(id)) {
+    return requestUnlockPassword(id, 'edit');
+  }
+
+  editingInlineLogId = id;
   if (item) {
     inlineFileState = {
       tasks: [...normalizeFilesArray(item, 'tasksFiles')],
@@ -1680,6 +1801,7 @@ function saveInlineEdit(id) {
   const place = form.querySelector('.edit-place').value.trim();
   const tag = form.querySelector('.edit-tag').value.trim() || "業務";
   const person = form.querySelector('.edit-person').value.trim();
+  const isLocked = form.querySelector('.edit-is-locked').checked;
   const tasks = cleanEditorHTML(form.querySelector('.edit-tasks').innerHTML);
   const detail = cleanEditorHTML(form.querySelector('.edit-detail').innerHTML);
   const memo = cleanEditorHTML(form.querySelector('.edit-memo').innerHTML);
@@ -1703,6 +1825,7 @@ function saveInlineEdit(id) {
     place: place,
     tag: tag,
     person: person,
+    isLocked: isLocked,
     tasks: tasks,
     tasksFiles: inlineFileState.tasks || [],
     detail: detail,
@@ -1750,14 +1873,16 @@ function renderLogs() {
     else if (period.startsWith('month:')) periodMatch = item.date.startsWith(period.replace('month:', ''));
     else periodMatch = isPastFilterOn ? (selectedDate ? item.date <= selectedDate : true) : true;
     
-    const qaMatch = (item.qaList && item.qaList.some(qa => (qa.q && qa.q.toLowerCase().includes(query)) || (qa.a && qa.a.toLowerCase().includes(query))));
+    // ロック中の記録はパスワード解除前はクエリ検索対象外にして安全性を確保
+    const isUnlocked = !item.isLocked || unlockedLogIds.has(item.id);
+    const qaMatch = isUnlocked && (item.qaList && item.qaList.some(qa => (qa.q && qa.q.toLowerCase().includes(query)) || (qa.a && qa.a.toLowerCase().includes(query))));
     const matchesQuery = (item.place && item.place.toLowerCase().includes(query)) ||
                          (item.tag && item.tag.toLowerCase().includes(query)) ||
                          (item.person && item.person.toLowerCase().includes(query)) ||
-                         (item.tasks && item.tasks.toLowerCase().includes(query)) ||
-                         (item.detail && item.detail.toLowerCase().includes(query)) ||
+                         (isUnlocked && item.tasks && item.tasks.toLowerCase().includes(query)) ||
+                         (isUnlocked && item.detail && item.detail.toLowerCase().includes(query)) ||
                          qaMatch ||
-                         (item.memo && item.memo.toLowerCase().includes(query));
+                         (isUnlocked && item.memo && item.memo.toLowerCase().includes(query));
     return periodMatch && matchesQuery;
   });
 
@@ -1787,6 +1912,9 @@ function renderLogs() {
       const itemDiv = document.createElement('div');
       itemDiv.className = 'log-item';
       const isEditingThis = (item.id === editingInlineLogId);
+      const isLocked = !!item.isLocked;
+      const isUnlocked = !isLocked || unlockedLogIds.has(item.id);
+
       const qaList = item.qaList || [];
       const isFirst = (index === 0), isLast = (index === itemsOnDay.length - 1);
 
@@ -1826,6 +1954,11 @@ function renderLogs() {
               <input type="text" class="edit-tag" placeholder="タグ" value="${escapeHtml(item.tag || '')}">
               <input type="text" class="edit-person" placeholder="話した人" value="${escapeHtml(item.person || '')}">
             </div>
+
+            <label class="lock-setting-row" style="margin-bottom:8px;">
+              <input type="checkbox" class="edit-is-locked" ${item.isLocked ? 'checked' : ''}>
+              <span>🔒 パスワード保護を有効にする</span>
+            </label>
 
             <!-- 業務内容編集 -->
             <span class="input-label">📌 業務内容</span>
@@ -1944,6 +2077,7 @@ function renderLogs() {
         itemDiv.innerHTML = `
           <div class="log-item-header">
             <div class="meta-badges">
+              ${isLocked ? `<span class="log-lock-badge">🔒 保護</span>` : ''}
               ${item.place ? `<span class="log-place">${escapeHtml(item.place)}</span>` : ''}
               <span class="log-tag">${escapeHtml(item.tag)}</span>
               ${item.person ? `<span class="log-person">🗣️ ${escapeHtml(item.person)}</span>` : ''}
@@ -1953,75 +2087,87 @@ function renderLogs() {
                 <button class="btn-move" ${isFirst ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', -1)" title="上へ">▲</button>
                 <button class="btn-move" ${isLast ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', 1)" title="下へ">▼</button>
               ` : ''}
+              ${isLocked && isUnlocked ? `
+                <button class="btn-relock" onclick="lockLog(${item.id})" title="ロックする">🔒 ロック</button>
+              ` : ''}
               <button class="btn-edit" onclick="startInlineEdit(${item.id})">✏️ 編集</button>
               <button class="btn-del" onclick="deleteLog(${item.id})">✕</button>
             </div>
           </div>
 
-          ${item.tasks || tasksFiles.length > 0 ? `
-            <div class="log-section-label">📌 業務内容</div>
-            ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
-            ${tasksFiles.length > 0 ? `
-              <div class="log-file-badges-wrap">
-                ${tasksFiles.map((f, fIdx) => `
-                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasksFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
-                  </button>
-                `).join('')}
-              </div>
-            ` : ''}
-          ` : ''}
-
-          ${item.detail || detailFiles.length > 0 ? `
-            <div class="log-section-label">💡 学習内容</div>
-            ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
-            ${detailFiles.length > 0 ? `
-              <div class="log-file-badges-wrap">
-                ${detailFiles.map((f, fIdx) => `
-                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
-                  </button>
-                `).join('')}
-              </div>
-            ` : ''}
-          ` : ''}
-
-          ${qaList.length > 0 ? `
-            <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
-            <div class="log-qa-group">
-              ${qaList.map((qa, i) => {
-                let qFiles = [];
-                if (Array.isArray(qa.files)) qFiles = qa.files;
-                else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
-                return `
-                  <div class="log-qa-single">
-                    ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
-                    ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
-                    ${qFiles.length > 0 ? `
-                      <div class="log-file-badges-wrap">
-                        ${qFiles.map((qf, qfIdx) => `
-                          <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id}, ${i}, ${qfIdx})'>
-                            ${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
-                          </button>
-                        `).join('')}
-                      </div>
-                    ` : ''}
-                  </div>
-                `;
-              }).join('')}
+          ${!isUnlocked ? `
+            <div class="locked-card-cover">
+              <div class="locked-card-msg">🔒 この記録はパスワードで保護されています</div>
+              <button type="button" class="btn-unlock-trigger" onclick="requestUnlockPassword(${item.id}, 'view')">🔓 パスワードを入力して閲覧</button>
             </div>
-          ` : ''}
+          ` : `
+            ${item.tasks || tasksFiles.length > 0 ? `
+              <div class="log-section-label">📌 業務内容</div>
+              ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
+              ${tasksFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${tasksFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasksFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
 
-          ${item.memo || memoFiles.length > 0 ? `
-            <div class="log-section-label">📋 メモ</div>
-            ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
-            ${memoFiles.length > 0 ? `
-              <div class="log-file-badges-wrap">
-                ${memoFiles.map((f, fIdx) => `
-                  <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
-                  </button>
-                `).join('')}
+            ${item.detail || detailFiles.length > 0 ? `
+              <div class="log-section-label">💡 学習内容</div>
+              ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
+              ${detailFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${detailFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
+
+            ${qaList.length > 0 ? `
+              <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
+              <div class="log-qa-group">
+                ${qaList.map((qa, i) => {
+                  let qFiles = [];
+                  if (Array.isArray(qa.files)) qFiles = qa.files;
+                  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
+                  return `
+                    <div class="log-qa-single">
+                      ${qa.q ? `<div class="qa-q">Q${qaList.length > 1 ? (i+1) : ''}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
+                      ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
+                      ${qFiles.length > 0 ? `
+                        <div class="log-file-badges-wrap">
+                          ${qFiles.map((qf, qfIdx) => `
+                            <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id},${i}, ${qfIdx})'>${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
+                            </button>
+                          `).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
               </div>
             ` : ''}
-          ` : ''}
+
+            ${item.memo || memoFiles.length > 0 ? `
+              <div class="log-section-label">📋 メモ</div>
+              ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
+              ${memoFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${memoFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
+          `}
         `;
       }
       groupDiv.appendChild(itemDiv);
@@ -2163,7 +2309,7 @@ async function syncWithCloud(silent = false) {
       if (!silent) alert('最新データを同期しました！');
     } else {
       await pushToCloud(false);
-      indicator.innerText = `☁️️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+      indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
       if (!silent) alert('ローカルのデータをスプレッドシートに保存しました！');
     }
   } catch (err) {
