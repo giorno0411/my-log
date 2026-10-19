@@ -6,6 +6,8 @@
 <title>日報・学習記録ノート</title>
 <!-- PDF描画ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- HEIC画像自動変換ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -1200,50 +1202,83 @@ function lockLog(id) {
   renderLogs();
 }
 
-/* HEIC対応を含むファイル判定 */
-function isImageFile(file) {
+/* HEIC判定 */
+function isHeicFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  return file.type.startsWith("image/") || ['heic', 'heif'].includes(ext);
+  return ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif';
 }
 
-/* ファイル複数添付ハンドリング */
-function handleFilesUpload(e, mode, field) {
-  const fileList = Array.from(e.target.files);
-  if (fileList.length === 0) return;
+function isImageFile(file) {
+  return file.type.startsWith("image/") || isHeicFile(file);
+}
 
-  fileList.forEach(file => {
-    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
-    const isImg = isImageFile(file);
-    if (!isPdf && !isImg) return;
-
-    if (file.size > 15 * 1024 * 1024) {
-      alert(`${file.name} はサイズが大きすぎます(15MB以下)`);
-      return;
+/* HEICをJPEGに自動変換してDataURL化 */
+async function processFileToDataURL(file) {
+  if (isHeicFile(file) && typeof heic2any !== 'undefined') {
+    try {
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.85
+      });
+      const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve({ data: e.target.result, name: file.name.replace(/\.(heic|heif)$/i, '.jpg'), type: 'image', mimeType: 'image/jpeg', size: (blob.size / 1024).toFixed(1) + " KB" });
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn("HEIC conversion fallback:", e);
     }
+  }
 
+  return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload = function(evt) {
-      const fileObj = {
-        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+    reader.onload = (e) => {
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      resolve({
+        data: e.target.result,
         name: file.name,
         type: isPdf ? 'pdf' : 'image',
-        mimeType: file.type || (isPdf ? 'application/pdf' : 'image/heic'),
-        size: (file.size / 1024).toFixed(1) + " KB",
-        data: evt.target.result
-      };
-
-      if (mode === 'new') {
-        if (!Array.isArray(newFiles[field])) newFiles[field] = [];
-        newFiles[field].push(fileObj);
-        renderFilesAttachList('new', field);
-      } else {
-        if (!Array.isArray(inlineFileState[field])) inlineFileState[field] = [];
-        inlineFileState[field].push(fileObj);
-        renderFilesAttachList('inline', field, mode);
-      }
+        mimeType: file.type || (isPdf ? 'application/pdf' : 'image/jpeg'),
+        size: (file.size / 1024).toFixed(1) + " KB"
+      });
     };
     reader.readAsDataURL(file);
   });
+}
+
+/* ファイル複数添付ハンドリング */
+async function handleFilesUpload(e, mode, field) {
+  const fileList = Array.from(e.target.files);
+  if (fileList.length === 0) return;
+
+  for (const file of fileList) {
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isImg = isImageFile(file);
+    if (!isPdf && !isImg) continue;
+
+    if (file.size > 20 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(20MB以下)`);
+      continue;
+    }
+
+    const fileInfo = await processFileToDataURL(file);
+    const fileObj = {
+      id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+      ...fileInfo
+    };
+
+    if (mode === 'new') {
+      if (!Array.isArray(newFiles[field])) newFiles[field] = [];
+      newFiles[field].push(fileObj);
+      renderFilesAttachList('new', field);
+    } else {
+      if (!Array.isArray(inlineFileState[field])) inlineFileState[field] = [];
+      inlineFileState[field].push(fileObj);
+      renderFilesAttachList('inline', field, mode);
+    }
+  }
   e.target.value = "";
 }
 
@@ -1280,7 +1315,7 @@ function renderFilesAttachList(mode, field, logId = null) {
 }
 
 /* Q&A用複数ファイル添付ハンドリング */
-function handleQaFilesUpload(e, cardEl) {
+async function handleQaFilesUpload(e, cardEl) {
   const fileList = Array.from(e.target.files);
   if (fileList.length === 0) return;
 
@@ -1289,35 +1324,25 @@ function handleQaFilesUpload(e, cardEl) {
     try { currentList = JSON.parse(cardEl.dataset.filesData); } catch(err) { currentList = []; }
   }
 
-  let loadedCount = 0;
-  fileList.forEach(file => {
+  for (const file of fileList) {
     const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
     const isImg = isImageFile(file);
-    if (!isPdf && !isImg) return;
+    if (!isPdf && !isImg) continue;
 
-    if (file.size > 15 * 1024 * 1024) {
-      alert(`${file.name} はサイズが大きすぎます(15MB以下)`);
-      return;
+    if (file.size > 20 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(20MB以下)`);
+      continue;
     }
 
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      currentList.push({
-        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
-        name: file.name,
-        type: isPdf ? 'pdf' : 'image',
-        mimeType: file.type || (isPdf ? 'application/pdf' : 'image/heic'),
-        size: (file.size / 1024).toFixed(1) + " KB",
-        data: evt.target.result
-      });
-      loadedCount++;
-      if (loadedCount === fileList.length) {
-        cardEl.dataset.filesData = JSON.stringify(currentList);
-        renderQaFilesPreview(cardEl, currentList);
-      }
-    };
-    reader.readAsDataURL(file);
-  });
+    const fileInfo = await processFileToDataURL(file);
+    currentList.push({
+      id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+      ...fileInfo
+    });
+  }
+
+  cardEl.dataset.filesData = JSON.stringify(currentList);
+  renderQaFilesPreview(cardEl, currentList);
   e.target.value = "";
 }
 
