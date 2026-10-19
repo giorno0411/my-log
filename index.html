@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>日報・学習記録ノート</title>
+<!-- PDF描画ライブラリ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -190,7 +192,7 @@
     display: block;
   }
 
-  /* 添付ファイル操作エリア */
+  /* 添付ファイル（複数対応）操作エリア */
   .attach-control-area {
     display: flex;
     flex-direction: column;
@@ -500,7 +502,7 @@
     border-left: 3px solid var(--primary);
   }
   
-  /* 以前のQ&Aスタイル */
+  /* 以前の美しいデザインと完全一致させたQ&Aスタイル */
   .log-qa-group {
     display: flex;
     flex-direction: column;
@@ -530,7 +532,7 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  /* ロック中カード表示 */
+  /* ロック中カードの表示 */
   .locked-card-cover {
     background: #131d2e;
     border: 1px dashed #f43f5e;
@@ -557,7 +559,7 @@
   }
   .btn-unlock-trigger:hover { background: #e11d48; }
 
-  /* 添付ファイルバッジ一覧 */
+  /* 閲覧カード上のファイル添付チップコンテナ */
   .log-file-badges-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -664,7 +666,7 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビューモーダル */
+  /* プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） */
   .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -998,7 +1000,7 @@
   </div>
 </div>
 
-<!-- プレビューモーダル（PDF・画像両対応・画面枠いっぱいフィット） -->
+<!-- プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
@@ -1019,34 +1021,1323 @@
 </div>
 
 <script>
-// スクリプト実行の安全ガード
-try {
-  if (typeof pdfjsLib !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
-  }
-} catch (e) {}
+const STORAGE_KEY = "daily_work_learning_logs_main";
+const GAS_URL_KEY = "daily_work_learning_gas_url";
+const DB_NAME = "DailyWorkLearningLogDB";
+const STORE_NAME = "logs_store";
+const SECRET_PASSWORD = "zzykiSAida0@";
 
-// 安全な初期化起動
-document.addEventListener('DOMContentLoaded', () => {
-  initApp().catch(err => {
-    console.error("Initialization error:", err);
-    renderLogs();
+let logs = [];
+let editingInlineLogId = null;
+const weekDaysJa = ["(日)", "(月)", "(火)", "(水)", "(木)", "(金)", "(土)"];
+
+const unlockedLogIds = new Set();
+let pendingUnlockLogId = null;
+let pendingActionType = null;
+
+let newFiles = { tasks: [], detail: [], memo: [] };
+let inlineFileState = { tasks: [], detail: [], memo: [] };
+
+let currentPdfDoc = null;
+let currentPdfPage = 1;
+let totalPdfPages = 1;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, 1);
+    request.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = function(e) { resolve(e.target.result); };
+    request.onerror = function(e) { reject(e); };
   });
-});
+}
 
-async function initApp() {
-  const today = getLocalDateString();
-  const dateInput = document.getElementById('input-date');
-  if (dateInput) {
-    dateInput.value = today;
-    updateDateDisplay('input-date', 'date-display-text');
+async function idbSaveLogs(data) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      const store = tx.objectStore(STORE_NAME);
+      store.put(data, "main_logs");
+      tx.oncomplete = function() { resolve(); };
+      tx.onerror = function(err) { reject(err); };
+    });
+  } catch (err) {
+    console.error("IDB save error:", err);
   }
+}
+
+async function idbLoadLogs() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get("main_logs");
+      req.onsuccess = function() { resolve(req.result); };
+      req.onerror = function(err) { reject(err); };
+    });
+  } catch (err) {
+    console.error("IDB load error:", err);
+    return null;
+  }
+}
+
+function applyRichStyle(e, command, value = null) {
+  e.preventDefault();
+  document.execCommand(command, false, value);
+}
+
+function getLocalDateString(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return "";
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3) return dateStr;
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
+  const weekday = isNaN(d.getDay()) ? "" : weekDaysJa[d.getDay()];
+  return `${parts[0]}/${parts[1]}/${parts[2]}${weekday}`;
+}
+
+function updateDateDisplay(elId, displayTextId) {
+  const inputEl = document.getElementById(elId);
+  const textEl = document.getElementById(displayTextId);
+  if (inputEl && textEl) {
+    textEl.innerText = formatDisplayDate(inputEl.value) || "日付を選択";
+  }
+}
+
+function setupEditorEnterKey(el) {
+  if (!el || el.dataset.enterBound) return;
+  el.dataset.enterBound = "true";
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.execCommand('insertLineBreak');
+    }
+  });
+}
+
+function cleanAndFormatLegacyText(content) {
+  if (!content) return "";
+  let html = content;
+  if (!html.includes('<') || !html.includes('>')) {
+    html = escapeHtml(html);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
+    html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
+    html = html.replace(/\n/g, '<br>');
+  }
+  html = html.replace(/<div><br><\/div>/gi, '<br>');
+  html = html.replace(/<p><br><\/p>/gi, '<br>');
+  return html;
+}
+
+function b64toUint8Array(dataURI) {
+  const base64Data = dataURI.split(',')[1];
+  const binaryStr = atob(base64Data);
+  const len = binaryStr.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryStr.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function requestUnlockPassword(logId, action = 'view') {
+  pendingUnlockLogId = logId;
+  pendingActionType = action;
+  document.getElementById('password-input').value = "";
+  document.getElementById('password-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('password-input').focus(), 100);
+}
+
+function closePasswordModal() {
+  pendingUnlockLogId = null;
+  pendingActionType = null;
+  document.getElementById('password-modal').classList.add('hidden');
+}
+
+function submitPasswordUnlock() {
+  const inputPass = document.getElementById('password-input').value;
+  if (inputPass === SECRET_PASSWORD) {
+    const targetId = pendingUnlockLogId;
+    const action = pendingActionType;
+    unlockedLogIds.add(targetId);
+    closePasswordModal();
+
+    if (action === 'edit') {
+      startInlineEdit(targetId);
+    } else if (action === 'delete') {
+      deleteLog(targetId);
+    } else {
+      renderLogs();
+    }
+  } else {
+    alert("パスワードが正しくありません。");
+    document.getElementById('password-input').value = "";
+    document.getElementById('password-input').focus();
+  }
+}
+
+function lockLog(id) {
+  unlockedLogIds.delete(id);
+  renderLogs();
+}
+
+/* HEIC対応を含むファイル判定 */
+function isImageFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  return file.type.startsWith("image/") || ['heic', 'heif'].includes(ext);
+}
+
+/* ファイル複数添付ハンドリング */
+function handleFilesUpload(e, mode, field) {
+  const fileList = Array.from(e.target.files);
+  if (fileList.length === 0) return;
+
+  fileList.forEach(file => {
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isImg = isImageFile(file);
+    if (!isPdf && !isImg) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(15MB以下)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const fileObj = {
+        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        name: file.name,
+        type: isPdf ? 'pdf' : 'image',
+        mimeType: file.type || (isPdf ? 'application/pdf' : 'image/heic'),
+        size: (file.size / 1024).toFixed(1) + " KB",
+        data: evt.target.result
+      };
+
+      if (mode === 'new') {
+        if (!Array.isArray(newFiles[field])) newFiles[field] = [];
+        newFiles[field].push(fileObj);
+        renderFilesAttachList('new', field);
+      } else {
+        if (!Array.isArray(inlineFileState[field])) inlineFileState[field] = [];
+        inlineFileState[field].push(fileObj);
+        renderFilesAttachList('inline', field, mode);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = "";
+}
+
+function removeSingleFile(mode, field, fileId, logId = null) {
+  if (mode === 'new') {
+    newFiles[field] = (newFiles[field] || []).filter(f => f.id !== fileId);
+    renderFilesAttachList('new', field);
+  } else {
+    inlineFileState[field] = (inlineFileState[field] || []).filter(f => f.id !== fileId);
+    renderFilesAttachList('inline', field, logId);
+  }
+}
+
+function renderFilesAttachList(mode, field, logId = null) {
+  const containerId = mode === 'new' ? `new-${field}-file-list` : `inline-${field}-file-list-${logId}`;
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  const fileArr = mode === 'new' ? (newFiles[field] || []) : (inlineFileState[field] || []);
+  if (fileArr.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+
+  container.innerHTML = fileArr.map(file => {
+    const icon = file.type === 'image' ? '🖼️' : '📄';
+    return `
+      <span class="attach-file-tag">
+        ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
+        <button type="button" class="attach-del-btn" onclick="removeSingleFile('${mode}', '${field}', '${file.id}', ${logId})" title="削除">✕</button>
+      </span>
+    `;
+  }).join('');
+}
+
+/* Q&A用複数ファイル添付ハンドリング */
+function handleQaFilesUpload(e, cardEl) {
+  const fileList = Array.from(e.target.files);
+  if (fileList.length === 0) return;
+
+  let currentList = [];
+  if (cardEl.dataset.filesData) {
+    try { currentList = JSON.parse(cardEl.dataset.filesData); } catch(err) { currentList = []; }
+  }
+
+  let loadedCount = 0;
+  fileList.forEach(file => {
+    const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    const isImg = isImageFile(file);
+    if (!isPdf && !isImg) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert(`${file.name} はサイズが大きすぎます(15MB以下)`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      currentList.push({
+        id: Date.now() + "_" + Math.random().toString(36).substr(2, 6),
+        name: file.name,
+        type: isPdf ? 'pdf' : 'image',
+        mimeType: file.type || (isPdf ? 'application/pdf' : 'image/heic'),
+        size: (file.size / 1024).toFixed(1) + " KB",
+        data: evt.target.result
+      });
+      loadedCount++;
+      if (loadedCount === fileList.length) {
+        cardEl.dataset.filesData = JSON.stringify(currentList);
+        renderQaFilesPreview(cardEl, currentList);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = "";
+}
+
+function removeSingleQaFile(btn, fileId) {
+  const cardEl = btn.closest('.qa-item-card');
+  if (!cardEl) return;
+  let currentList = [];
+  if (cardEl.dataset.filesData) {
+    try { currentList = JSON.parse(cardEl.dataset.filesData); } catch(err) { currentList = []; }
+  }
+  currentList = currentList.filter(f => f.id !== fileId);
+  cardEl.dataset.filesData = JSON.stringify(currentList);
+  renderQaFilesPreview(cardEl, currentList);
+}
+
+function renderQaFilesPreview(cardEl, fileList) {
+  const previewDiv = cardEl.querySelector('.qa-file-list');
+  if (!previewDiv) return;
+  if (!Array.isArray(fileList) || fileList.length === 0) {
+    previewDiv.innerHTML = "";
+    return;
+  }
+  previewDiv.innerHTML = fileList.map(file => {
+    const icon = file.type === 'image' ? '🖼️' : '📄';
+    return `
+      <span class="attach-file-tag">
+        ${icon} <span class="attach-file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)} (${file.size})</span>
+        <button type="button" class="attach-del-btn" onclick="removeSingleQaFile(this, '${file.id}')" title="削除">✕</button>
+      </span>
+    `;
+  }).join('');
+}
+
+/* プレビューモーダル */
+async function openFilePreviewModal(name, dataUri, type) {
+  const isPdf = (type === 'pdf') || (!type && dataUri.startsWith('data:application/pdf'));
+  const modal = document.getElementById('file-preview-modal');
+  const title = document.getElementById('preview-modal-title');
+  const pageControls = document.getElementById('pdf-page-controls');
+  const imgEl = document.getElementById('modal-preview-image');
+  const canvas = document.getElementById('modal-preview-pdf-canvas');
+  const loadingMsg = document.getElementById('pdf-loading-msg');
+
+  const icon = isPdf ? '📄' : '🖼️';
+  title.innerText = `${icon} ${name}`;
+  modal.classList.remove('hidden');
+
+  if (!isPdf) {
+    pageControls.classList.add('hidden');
+    canvas.classList.add('hidden');
+    loadingMsg.classList.add('hidden');
+    imgEl.src = dataUri;
+    imgEl.classList.remove('hidden');
+  } else {
+    imgEl.classList.add('hidden');
+    canvas.classList.remove('hidden');
+    pageControls.classList.remove('hidden');
+    loadingMsg.classList.remove('hidden');
+
+    try {
+      const pdfDataBytes = b64toUint8Array(dataUri);
+      const loadingTask = pdfjsLib.getDocument({
+        data: pdfDataBytes,
+        disableWorker: true,
+        useSystemFonts: true
+      });
+      currentPdfDoc = await loadingTask.promise;
+      totalPdfPages = currentPdfDoc.numPages;
+      currentPdfPage = 1;
+      
+      requestAnimationFrame(() => {
+        renderPdfCanvasPage(currentPdfPage);
+      });
+    } catch (err) {
+      console.error("PDF Canvas描画失敗:", err);
+      loadingMsg.innerText = "PDFの描画に失敗しました。";
+    }
+  }
+}
+
+async function renderPdfCanvasPage(pageNum) {
+  if (!currentPdfDoc) return;
+  const loadingMsg = document.getElementById('pdf-loading-msg');
+  loadingMsg.innerText = "読み込み中...";
+  loadingMsg.classList.remove('hidden');
+
+  try {
+    const page = await currentPdfDoc.getPage(pageNum);
+    const container = document.getElementById('preview-container');
+    const canvas = document.getElementById('modal-preview-pdf-canvas');
+    const ctx = canvas.getContext('2d');
+
+    const availWidth = Math.max(container.clientWidth, 200);
+    const availHeight = Math.max(container.clientHeight, 200);
+    const unscaledViewport = page.getViewport({ scale: 1.0 });
+
+    const scaleX = availWidth / unscaledViewport.width;
+    const scaleY = availHeight / unscaledViewport.height;
+    const fitScale = Math.min(scaleX, scaleY);
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const viewport = page.getViewport({ scale: fitScale * dpr });
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    canvas.style.width = `${viewport.width / dpr}px`;
+    canvas.style.height = `${viewport.height / dpr}px`;
+
+    const renderContext = {
+      canvasContext: ctx,
+      viewport: viewport
+    };
+
+    await page.render(renderContext).promise;
+    loadingMsg.classList.add('hidden');
+  } catch(e) {
+    console.error("Render page error:", e);
+    loadingMsg.innerText = "ページの描画に失敗しました。";
+  } finally {
+    document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
+    document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
+    document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
+  }
+}
+
+function changePdfPage(delta) {
+  const target = currentPdfPage + delta;
+  if (target >= 1 && target <= totalPdfPages) {
+    currentPdfPage = target;
+    renderPdfCanvasPage(currentPdfPage);
+  }
+}
+
+function closeFilePreviewModal() {
+  const modal = document.getElementById('file-preview-modal');
+  const imgEl = document.getElementById('modal-preview-image');
+  const canvas = document.getElementById('modal-preview-pdf-canvas');
+  
+  imgEl.src = "";
+  currentPdfDoc = null;
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+  modal.classList.add('hidden');
+}
+
+window.onload = async function() {
+  const today = getLocalDateString();
+  document.getElementById('input-date').value = today;
+  updateDateDisplay('input-date', 'date-display-text');
   document.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
   
   await loadLogs();
   updateMonthFilterOptions();
   onDateChanged();
   if (localStorage.getItem(GAS_URL_KEY)) syncWithCloud(true);
+};
+
+function updateMonthFilterOptions() {
+  const optgroup = document.getElementById('filter-month-optgroup');
+  if (!optgroup) return;
+  optgroup.innerHTML = '';
+  const monthsSet = new Set();
+  logs.forEach(item => {
+    if (item.date && item.date.length >= 7) monthsSet.add(item.date.substring(0, 7));
+  });
+  const sortedMonths = Array.from(monthsSet).sort().reverse();
+  sortedMonths.forEach(ym => {
+    const [y, m] = ym.split('-');
+    const opt = document.createElement('option');
+    opt.value = `month:${ym}`;
+    opt.innerText = `📆 ${y}年${parseInt(m, 10)}月`;
+    optgroup.appendChild(opt);
+  });
+}
+
+function onPeriodFilterChanged() {
+  const period = document.getElementById('filter-period-select').value;
+  const toggleWrapper = document.getElementById('toggle-filter-wrapper');
+  toggleWrapper.style.display = (period === 'all') ? 'flex' : 'none';
+  renderLogs();
+}
+
+function togglePastFilter() {
+  const isChecked = document.getElementById('filter-past-only-toggle').checked;
+  const labelText = document.querySelector('.toggle-filter-label');
+  labelText.innerHTML = `<input type="checkbox" id="filter-past-only-toggle" ${isChecked ? 'checked' : ''} onchange="togglePastFilter()"> 選択日以前のみ (${isChecked ? 'ON' : 'OFF'})`;
+  renderLogs();
+}
+
+function onQuestionSelectChanged() {
+  const select = document.getElementById('has-question-select');
+  const area = document.getElementById('qa-inputs-area');
+  const container = document.getElementById('qa-list-container');
+  if (select.value === 'exist') {
+    area.classList.remove('hidden');
+    if (container.children.length === 0) addQaInputRow();
+  } else {
+    area.classList.add('hidden');
+  }
+}
+
+function addQaInputRow(qVal = "", aVal = "", files = []) {
+  const container = document.getElementById('qa-list-container');
+  const itemDiv = document.createElement('div');
+  itemDiv.className = 'qa-item-card';
+  if (Array.isArray(files) && files.length > 0) {
+    itemDiv.dataset.filesData = JSON.stringify(files);
+  }
+  itemDiv.innerHTML = `
+    <button type="button" class="btn-qa-del" onclick="removeQaInputRow(this)">✕</button>
+    <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
+    <div class="rich-editor qa-input-q" contenteditable="true">${qVal}</div>
+    <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
+    <div class="rich-editor qa-input-a" contenteditable="true">${aVal}</div>
+    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 添付 (PDF/画像/HEIC 複数可)
+          <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+        </label>
+      </div>
+      <div class="attach-file-list qa-file-list"></div>
+    </div>
+  `;
+  container.appendChild(itemDiv);
+  itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+  if (Array.isArray(files) && files.length > 0) renderQaFilesPreview(itemDiv, files);
+}
+
+function removeQaInputRow(btn) {
+  const container = document.getElementById('qa-list-container');
+  btn.closest('.qa-item-card').remove();
+  if (container.children.length === 0) {
+    document.getElementById('has-question-select').value = 'none';
+    document.getElementById('qa-inputs-area').classList.add('hidden');
+  }
+}
+
+function normalizeFilesArray(item, field) {
+  if (Array.isArray(item[field])) return item[field];
+  const oldSingle = item[field] || item[`${field.replace('Files', '')}File`] || item[`${field.replace('Files', '')}Pdf`];
+  if (oldSingle && typeof oldSingle === 'object') {
+    return [oldSingle];
+  }
+  return [];
+}
+
+async function loadLogs() {
+  const idbData = await idbLoadLogs();
+  if (Array.isArray(idbData) && idbData.length > 0) {
+    logs = idbData;
+  } else {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    logs = saved ? JSON.parse(saved) : [];
+    if (logs.length > 0) await idbSaveLogs(logs);
+  }
+  updateMonthFilterOptions();
+  renderLogs();
+}
+
+async function saveLogs(triggerCloud = true) {
+  await idbSaveLogs(logs);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+  } catch (e) {}
+  updateMonthFilterOptions();
+  renderLogs();
+  if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
+}
+
+function onDateChanged() {
+  const selectedDate = document.getElementById('input-date').value;
+  updateDateDisplay('input-date', 'date-display-text');
+  if (!selectedDate) return;
+  document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加できます`;
+  renderLogs();
+}
+
+function resetFormForNew() {
+  document.getElementById('input-place').value = '';
+  document.getElementById('input-tag').value = '';
+  document.getElementById('input-person').value = '';
+  document.getElementById('input-is-locked').checked = false;
+  document.getElementById('input-tasks').innerHTML = '';
+  document.getElementById('input-detail').innerHTML = '';
+  document.getElementById('has-question-select').value = 'none';
+  document.getElementById('qa-list-container').innerHTML = '';
+  document.getElementById('qa-inputs-area').classList.add('hidden');
+  document.getElementById('input-memo').innerHTML = '';
+  
+  newFiles = { tasks: [], detail: [], memo: [] };
+  renderFilesAttachList('new', 'tasks');
+  renderFilesAttachList('new', 'detail');
+  renderFilesAttachList('new', 'memo');
+
+  const selectedDate = document.getElementById('input-date').value;
+  updateDateDisplay('input-date', 'date-display-text');
+  document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加中`;
+}
+
+function cleanEditorHTML(html) {
+  if (!html) return "";
+  let cleaned = html.replace(/<div><br><\/div>/gi, '<br>')
+                    .replace(/<div>/gi, '<br>')
+                    .replace(/<\/div>/gi, '')
+                    .replace(/<p>/gi, '<br>')
+                    .replace(/<\/p>/gi, '');
+  if (cleaned.startsWith('<br>')) cleaned = cleaned.substring(4);
+  return cleaned.trim();
+}
+
+function saveNewLog() {
+  const date = document.getElementById('input-date').value;
+  const place = document.getElementById('input-place').value.trim();
+  const tag = document.getElementById('input-tag').value.trim() || "業務";
+  const person = document.getElementById('input-person').value.trim();
+  const isLocked = document.getElementById('input-is-locked').checked;
+  const tasks = cleanEditorHTML(document.getElementById('input-tasks').innerHTML);
+  const detail = cleanEditorHTML(document.getElementById('input-detail').innerHTML);
+  
+  const hasQuestion = document.getElementById('has-question-select').value === 'exist';
+  const qaList = [];
+  if (hasQuestion) {
+    const cards = document.querySelectorAll('#qa-list-container .qa-item-card');
+    cards.forEach(card => {
+      const q = cleanEditorHTML(card.querySelector('.qa-input-q').innerHTML);
+      const a = cleanEditorHTML(card.querySelector('.qa-input-a').innerHTML);
+      let files = [];
+      if (card.dataset.filesData) {
+        try { files = JSON.parse(card.dataset.filesData); } catch(err) { files = []; }
+      }
+      if (q || a || files.length > 0) qaList.push({ q, a, files });
+    });
+  }
+
+  const memo = cleanEditorHTML(document.getElementById('input-memo').innerHTML);
+  const emptyRegex = /^(<br>|\s)*$/;
+  const hasFiles = (newFiles.tasks.length > 0) || (newFiles.detail.length > 0) || (newFiles.memo.length > 0);
+  if (emptyRegex.test(tasks) && emptyRegex.test(detail) && qaList.length === 0 && emptyRegex.test(memo) && !hasFiles) {
+    return alert('項目を入力してください');
+  }
+
+  const newLog = {
+    id: Date.now(),
+    date: date || getLocalDateString(),
+    place: place,
+    tag: tag,
+    person: person,
+    isLocked: isLocked,
+    tasks: emptyRegex.test(tasks) ? "" : tasks,
+    tasksFiles: newFiles.tasks || [],
+    detail: emptyRegex.test(detail) ? "" : detail,
+    detailFiles: newFiles.detail || [],
+    qaList: qaList,
+    memo: emptyRegex.test(memo) ? "" : memo,
+    memoFiles: newFiles.memo || []
+  };
+
+  logs.unshift(newLog);
+  saveLogs(true);
+  resetFormForNew();
+}
+
+function deleteLog(id) {
+  const item = logs.find(it => it.id === id);
+  if (item && item.isLocked && !unlockedLogIds.has(id)) {
+    return requestUnlockPassword(id, 'delete');
+  }
+  if (confirm('この記録を削除しますか？')) {
+    logs = logs.filter(item => item.id !== id);
+    if (editingInlineLogId === id) editingInlineLogId = null;
+    unlockedLogIds.delete(id);
+    saveLogs(true);
+  }
+}
+
+function moveLogOrder(id, date, direction) {
+  const dayIndices = [];
+  logs.forEach((item, index) => { if (item.date === date) dayIndices.push(index); });
+  const currentDayPos = dayIndices.findIndex(idx => logs[idx].id === id);
+  if (currentDayPos === -1) return;
+  const targetDayPos = currentDayPos + direction;
+  if (targetDayPos < 0 || targetDayPos >= dayIndices.length) return;
+  const idxA = dayIndices[currentDayPos], idxB = dayIndices[targetDayPos];
+  const temp = logs[idxA]; logs[idxA] = logs[idxB]; logs[idxB] = temp;
+  saveLogs(true);
+}
+
+function startInlineEdit(id) {
+  const item = logs.find(it => it.id === id);
+  if (item && item.isLocked && !unlockedLogIds.has(id)) {
+    return requestUnlockPassword(id, 'edit');
+  }
+
+  editingInlineLogId = id;
+  if (item) {
+    inlineFileState = {
+      tasks: [...normalizeFilesArray(item, 'tasksFiles')],
+      detail: [...normalizeFilesArray(item, 'detailFiles')],
+      memo: [...normalizeFilesArray(item, 'memoFiles')]
+    };
+  }
+  renderLogs();
+  const form = document.getElementById(`inline-form-${id}`);
+  if (form) {
+    form.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+    renderFilesAttachList('inline', 'tasks', id);
+    renderFilesAttachList('inline', 'detail', id);
+    renderFilesAttachList('inline', 'memo', id);
+
+    form.querySelectorAll('.qa-item-card').forEach(cardEl => {
+      if (cardEl.dataset.filesData) {
+        try {
+          const filesArr = JSON.parse(cardEl.dataset.filesData);
+          renderQaFilesPreview(cardEl, filesArr);
+        } catch(err) {}
+      }
+    });
+  }
+}
+
+function cancelInlineEdit() {
+  editingInlineLogId = null;
+  inlineFileState = { tasks: [], detail: [], memo: [] };
+  renderLogs();
+}
+
+function addInlineQaRow(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const itemDiv = document.createElement('div');
+  itemDiv.className = 'qa-item-card';
+  itemDiv.innerHTML = `
+    <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
+    <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
+    <div class="rich-editor inline-qa-q" contenteditable="true"></div>
+    <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
+    <div class="rich-editor inline-qa-a" contenteditable="true"></div>
+    <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+      <div class="attach-btn-row">
+        <label class="btn-attach-file">
+          📎 添付 (PDF/画像/HEIC 複数可)
+          <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+        </label>
+      </div>
+      <div class="attach-file-list qa-file-list"></div>
+    </div>
+  `;
+  container.appendChild(itemDiv);
+  itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+}
+
+function updateInlineDateDisplay(id) {
+  const form = document.getElementById(`inline-form-${id}`);
+  if (!form) return;
+  const input = form.querySelector('.edit-date');
+  const textEl = form.querySelector('.inline-date-text');
+  if (input && textEl) {
+    textEl.innerText = formatDisplayDate(input.value) || "日付を選択";
+  }
+}
+
+function saveInlineEdit(id) {
+  const idx = logs.findIndex(item => item.id === id);
+  if (idx === -1) return;
+  const form = document.getElementById(`inline-form-${id}`);
+  if (!form) return;
+
+  const date = form.querySelector('.edit-date').value;
+  const place = form.querySelector('.edit-place').value.trim();
+  const tag = form.querySelector('.edit-tag').value.trim() || "業務";
+  const person = form.querySelector('.edit-person').value.trim();
+  const isLocked = form.querySelector('.edit-is-locked').checked;
+  const tasks = cleanEditorHTML(form.querySelector('.edit-tasks').innerHTML);
+  const detail = cleanEditorHTML(form.querySelector('.edit-detail').innerHTML);
+  const memo = cleanEditorHTML(form.querySelector('.edit-memo').innerHTML);
+
+  const qaCards = form.querySelectorAll('.qa-item-card');
+  const qaList = [];
+  qaCards.forEach(card => {
+    const q = cleanEditorHTML(card.querySelector('.inline-qa-q').innerHTML);
+    const a = cleanEditorHTML(card.querySelector('.inline-qa-a').innerHTML);
+    let files = [];
+    if (card.dataset.filesData) {
+      try { files = JSON.parse(card.dataset.filesData); } catch(err) { files = []; }
+    }
+    if (q || a || files.length > 0) qaList.push({ q, a, files });
+  });
+
+  logs[idx] = {
+    ...logs[idx],
+    id: id,
+    date: date || logs[idx].date,
+    place: place,
+    tag: tag,
+    person: person,
+    isLocked: isLocked,
+    tasks: tasks,
+    tasksFiles: inlineFileState.tasks || [],
+    detail: detail,
+    detailFiles: inlineFileState.detail || [],
+    qaList: qaList,
+    memo: memo,
+    memoFiles: inlineFileState.memo || []
+  };
+
+  editingInlineLogId = null;
+  inlineFileState = { tasks: [], detail: [], memo: [] };
+  saveLogs(true);
+}
+
+function renderLogs() {
+  const selectedDate = document.getElementById('input-date').value;
+  const period = document.getElementById('filter-period-select').value;
+  const isPastFilterOn = document.getElementById('filter-past-only-toggle').checked;
+  const query = document.getElementById('search-query').value.toLowerCase();
+  const container = document.getElementById('logs-container');
+  const statusText = document.getElementById('cutoff-status-text');
+  
+  container.innerHTML = '';
+  const now = new Date();
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const lastMonthYM = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`;
+
+  if (period === 'this-month') statusText.innerHTML = `📆 <b>今月 (${currentYM.replace('-', '年')}月)</b>`;
+  else if (period === 'last-month') statusText.innerHTML = `📆 <b>先月 (${lastMonthYM.replace('-', '年')}月)</b>`;
+  else if (period === 'selected-date') statusText.innerHTML = `📅 <b>${formatDisplayDate(selectedDate)} (当日のみ)</b>`;
+  else if (period.startsWith('month:')) {
+    const ym = period.replace('month:', '');
+    const [y, m] = ym.split('-');
+    statusText.innerHTML = `📆 <b>${y}年${parseInt(m, 10)}月</b>`;
+  } else {
+    statusText.innerHTML = (isPastFilterOn && selectedDate) ? `📅 <b>${formatDisplayDate(selectedDate)}</b> 以前` : `🌐 <b>全期間</b>`;
+  }
+
+  const filtered = logs.filter(item => {
+    let periodMatch = true;
+    if (period === 'this-month') periodMatch = item.date.startsWith(currentYM);
+    else if (period === 'last-month') periodMatch = item.date.startsWith(lastMonthYM);
+    else if (period === 'selected-date') periodMatch = (item.date === selectedDate);
+    else if (period.startsWith('month:')) periodMatch = item.date.startsWith(period.replace('month:', ''));
+    else periodMatch = isPastFilterOn ? (selectedDate ? item.date <= selectedDate : true) : true;
+    
+    const isUnlocked = !item.isLocked || unlockedLogIds.has(item.id);
+    const qaMatch = isUnlocked && (item.qaList && item.qaList.some(qa => (qa.q && qa.q.toLowerCase().includes(query)) || (qa.a && qa.a.toLowerCase().includes(query))));
+    const matchesQuery = (item.place && item.place.toLowerCase().includes(query)) ||
+                         (item.tag && item.tag.toLowerCase().includes(query)) ||
+                         (item.person && item.person.toLowerCase().includes(query)) ||
+                         (isUnlocked && item.tasks && item.tasks.toLowerCase().includes(query)) ||
+                         (isUnlocked && item.detail && item.detail.toLowerCase().includes(query)) ||
+                         qaMatch ||
+                         (isUnlocked && item.memo && item.memo.toLowerCase().includes(query));
+    return periodMatch && matchesQuery;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `<div style="text-align:center; color:#64748b; padding:24px;">該当する記録がありません</div>`;
+    return;
+  }
+
+  const grouped = {};
+  filtered.forEach(item => {
+    if (!grouped[item.date]) grouped[item.date] = [];
+    grouped[item.date].push(item);
+  });
+
+  const sortedDates = Object.keys(grouped).sort((a, b) => new Date(b) - new Date(a));
+  sortedDates.forEach(date => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'log-group';
+
+    const header = document.createElement('div');
+    header.className = 'log-date-header';
+    header.innerText = `📅 ${formatDisplayDate(date)}`;
+    groupDiv.appendChild(header);
+
+    const itemsOnDay = grouped[date];
+    itemsOnDay.forEach((item, index) => {
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'log-item';
+      const isEditingThis = (item.id === editingInlineLogId);
+      const isLocked = !!item.isLocked;
+      const isUnlocked = !isLocked || unlockedLogIds.has(item.id);
+
+      const qaList = item.qaList || [];
+      const isFirst = (index === 0), isLast = (index === itemsOnDay.length - 1);
+
+      const tasksFiles = normalizeFilesArray(item, 'tasksFiles');
+      const detailFiles = normalizeFilesArray(item, 'detailFiles');
+      const memoFiles = normalizeFilesArray(item, 'memoFiles');
+
+      if (isEditingThis) {
+        itemDiv.classList.add('is-editing');
+        const inlineQaContainerId = `inline-qa-list-${item.id}`;
+        itemDiv.innerHTML = `
+          <div class="inline-edit-form" id="inline-form-${item.id}">
+            <div class="inline-top-bar">
+              <span class="inline-title-tag">✏️ 記録を編集中</span>
+              <div class="inline-top-actions">
+                <button type="button" class="btn-save-mini" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
+                <button type="button" class="btn-cancel-mini" onclick="cancelInlineEdit()">✕</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="date-input-wrap">
+                <span class="date-display-text inline-date-text">${formatDisplayDate(item.date)}</span>
+                <div class="date-calendar-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                    <circle cx="8" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
+                    <circle cx="12" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
+                    <circle cx="16" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
+                  </svg>
+                </div>
+                <input type="date" class="edit-date date-native-input" value="${item.date}" onchange="updateInlineDateDisplay(${item.id})">
+              </div>
+              <input type="text" class="edit-place" placeholder="場所" value="${escapeHtml(item.place || '')}">
+              <input type="text" class="edit-tag" placeholder="タグ" value="${escapeHtml(item.tag || '')}">
+              <input type="text" class="edit-person" placeholder="話した人" value="${escapeHtml(item.person || '')}">
+            </div>
+
+            <label class="lock-setting-row" style="margin-bottom:8px;">
+              <input type="checkbox" class="edit-is-locked" ${item.isLocked ? 'checked' : ''}>
+              <span>🔒 パスワード保護を有効にする</span>
+            </label>
+
+            <!-- 業務内容編集 -->
+            <span class="input-label">📌 業務内容</span>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'underline')"><u>U</u></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ef4444')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
+            </div>
+            <div class="rich-editor edit-tasks" contenteditable="true">${cleanAndFormatLegacyText(item.tasks)}</div>
+            <div class="attach-control-area">
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (PDF/画像/HEIC 複数可)
+                  <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'tasks')">
+                </label>
+              </div>
+              <div id="inline-tasks-file-list-${item.id}" class="attach-file-list"></div>
+            </div>
+
+            <!-- 学習内容編集 -->
+            <span class="input-label">💡 学習内容</span>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'underline')"><u>U</u></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ef4444')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
+            </div>
+            <div class="rich-editor edit-detail" contenteditable="true">${cleanAndFormatLegacyText(item.detail)}</div>
+            <div class="attach-control-area">
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (PDF/画像/HEIC 複数可)
+                  <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'detail')">
+                </label>
+              </div>
+              <div id="inline-detail-file-list-${item.id}" class="attach-file-list"></div>
+            </div>
+
+            <!-- Q&A編集 -->
+            <div class="qa-box">
+              <span class="input-label">❓ 疑問点・回答</span>
+              <div class="qa-list-container" id="${inlineQaContainerId}">
+                ${qaList.map(qa => {
+                  let qFiles = [];
+                  if (Array.isArray(qa.files)) qFiles = qa.files;
+                  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
+                  return `
+                    <div class="qa-item-card" data-files-data='${escapeHtml(JSON.stringify(qFiles))}'>
+                      <button type="button" class="btn-qa-del" onclick="this.closest('.qa-item-card').remove()">✕</button>
+                      <span class="sub-label" style="color: #fda4af;">Q. 疑問</span>
+                      <div class="rich-editor inline-qa-q" contenteditable="true">${cleanAndFormatLegacyText(qa.q)}</div>
+                      <span class="sub-label" style="color: #6ee7b7;">A. 回答</span>
+                      <div class="rich-editor inline-qa-a" contenteditable="true">${cleanAndFormatLegacyText(qa.a)}</div>
+                      <div class="attach-control-area" style="margin-bottom:0; margin-top:2px;">
+                        <div class="attach-btn-row">
+                          <label class="btn-attach-file">
+                            📎 添付 (PDF/画像/HEIC 複数可)
+                            <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleQaFilesUpload(event, this.closest('.qa-item-card'))">
+                          </label>
+                        </div>
+                        <div class="attach-file-list qa-file-list"></div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+              <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
+            </div>
+
+            <!-- メモ編集 -->
+            <span class="input-label">📋 メモ</span>
+            <div class="rich-toolbar">
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'underline')"><u>U</u></button>
+              <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'strikeThrough')"><del>S</del></button>
+              <button type="button" class="rich-btn color-red" onmousedown="applyRichStyle(event, 'foreColor', '#ef4444')">赤</button>
+              <button type="button" class="rich-btn color-yellow" onmousedown="applyRichStyle(event, 'foreColor', '#fde047')">黄</button>
+              <button type="button" class="rich-btn color-green" onmousedown="applyRichStyle(event, 'foreColor', '#4ade80')">緑</button>
+              <button type="button" class="rich-btn color-blue" onmousedown="applyRichStyle(event, 'foreColor', '#60a5fa')">青</button>
+              <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
+              <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
+            </div>
+            <div class="rich-editor edit-memo" contenteditable="true">${cleanAndFormatLegacyText(item.memo)}</div>
+            <div class="attach-control-area">
+              <div class="attach-btn-row">
+                <label class="btn-attach-file">
+                  📎 添付 (PDF/画像/HEIC 複数可)
+                  <input type="file" accept="application/pdf,image/*,.heic,.heif,image/heic,image/heif" multiple style="display:none;" onchange="handleFilesUpload(event, ${item.id}, 'memo')">
+                </label>
+              </div>
+              <div id="inline-memo-file-list-${item.id}" class="attach-file-list"></div>
+            </div>
+
+            <div class="inline-btn-group">
+              <button type="button" class="btn-save-inline" onclick="saveInlineEdit(${item.id})">✓ 保存</button>
+              <button type="button" class="btn-cancel-inline" onclick="cancelInlineEdit()">キャンセル</button>
+            </div>
+          </div>
+        `;
+        itemDiv.querySelectorAll('.rich-editor').forEach(el => setupEditorEnterKey(el));
+      } else {
+        itemDiv.innerHTML = `
+          <div class="log-item-header">
+            <div class="meta-badges">
+              ${isLocked ? `<span class="log-lock-badge">🔒 保護</span>` : ''}
+              ${item.place ? `<span class="log-place">${escapeHtml(item.place)}</span>` : ''}
+              <span class="log-tag">${escapeHtml(item.tag)}</span>
+              ${item.person ? `<span class="log-person">🗣️ ${escapeHtml(item.person)}</span>` : ''}
+            </div>
+            <div class="item-actions">
+              ${itemsOnDay.length > 1 ? `
+                <button class="btn-move" ${isFirst ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', -1)" title="上へ">▲</button>
+                <button class="btn-move" ${isLast ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', 1)" title="下へ">▼</button>
+              ` : ''}
+              ${isLocked && isUnlocked ? `
+                <button class="btn-relock" onclick="lockLog(${item.id})" title="ロックする">🔒 ロック</button>
+              ` : ''}
+              <button class="btn-edit" onclick="startInlineEdit(${item.id})">✏️ 編集</button>
+              <button class="btn-del" onclick="deleteLog(${item.id})">✕</button>
+            </div>
+          </div>
+
+          ${!isUnlocked ? `
+            <div class="locked-card-cover">
+              <div class="locked-card-msg">🔒 この記録はパスワードで保護されています</div>
+              <button type="button" class="btn-unlock-trigger" onclick="requestUnlockPassword(${item.id}, 'view')">🔓 パスワードを入力して閲覧</button>
+            </div>
+          ` : `
+            ${item.tasks || tasksFiles.length > 0 ? `
+              <div class="log-section-label">📌 業務内容</div>
+              ${item.tasks ? `<div class="log-tasks">${cleanAndFormatLegacyText(item.tasks)}</div>` : ''}
+              ${tasksFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${tasksFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "tasksFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
+
+            ${item.detail || detailFiles.length > 0 ? `
+              <div class="log-section-label">💡 学習内容</div>
+              ${item.detail ? `<div class="log-detail">${cleanAndFormatLegacyText(item.detail)}</div>` : ''}
+              ${detailFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${detailFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "detailFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
+
+            ${qaList.length > 0 ? `
+              <div class="log-section-label">❓ 疑問と回答 (${qaList.length}件)</div>
+              <div class="log-qa-group">
+                ${qaList.map((qa, i) => {
+                  let qFiles = [];
+                  if (Array.isArray(qa.files)) qFiles = qa.files;
+                  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
+                  return `
+                    <div class="log-qa-single">
+                      ${qa.q ? `<div class="qa-q">Q${i+1}.${cleanAndFormatLegacyText(qa.q)}</div>` : ''}
+                      ${qa.a ? `<div class="qa-a">A. ${cleanAndFormatLegacyText(qa.a)}</div>` : ''}
+                      ${qFiles.length > 0 ? `
+                        <div class="log-file-badges-wrap">
+                          ${qFiles.map((qf, qfIdx) => `
+                            <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id},${i}, ${qfIdx})'>${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
+                            </button>
+                          `).join('')}
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+
+            ${item.memo || memoFiles.length > 0 ? `
+              <div class="log-section-label">📋 メモ</div>
+              ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
+              ${memoFiles.length > 0 ? `
+                <div class="log-file-badges-wrap">
+                  ${memoFiles.map((f, fIdx) => `
+                    <button type="button" class="log-file-badge" onclick='openFileFromLog(${item.id}, "memoFiles", ${fIdx})'>
+                      ${f.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(f.name)} (${f.size})
+                    </button>
+                  `).join('')}
+                </div>
+              ` : ''}
+            ` : ''}
+          `}
+        `;
+      }
+      groupDiv.appendChild(itemDiv);
+    });
+    container.appendChild(groupDiv);
+  });
+}
+
+function openFileFromLog(logId, field, fIndex) {
+  const item = logs.find(it => it.id === logId);
+  if (!item) return;
+  const files = normalizeFilesArray(item, field);
+  const fileObj = files[fIndex];
+  if (fileObj && fileObj.data) {
+    openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
+  }
+}
+
+function openFileFromQa(logId, qaIndex, fIndex) {
+  const item = logs.find(it => it.id === logId);
+  if (!item || !item.qaList || !item.qaList[qaIndex]) return;
+  const qa = item.qaList[qaIndex];
+  let qFiles = [];
+  if (Array.isArray(qa.files)) qFiles = qa.files;
+  else if (qa.file || qa.pdf) qFiles = [qa.file || qa.pdf];
+
+  const fileObj = qFiles[fIndex];
+  if (fileObj && fileObj.data) {
+    openFilePreviewModal(fileObj.name, fileObj.data, fileObj.type || (fileObj.data.startsWith('data:image/') ? 'image' : 'pdf'));
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
+function openSettingsModal() {
+  document.getElementById('gas-url-input').value = localStorage.getItem(GAS_URL_KEY) || "";
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+function closeSettingsModal() { document.getElementById('settings-modal').classList.add('hidden'); }
+function saveGasUrlSetting() {
+  const url = document.getElementById('gas-url-input').value.trim();
+  localStorage.setItem(GAS_URL_KEY, url);
+  closeSettingsModal();
+  if (url) pushToCloud(true);
+}
+
+function getCloudSafeLogs() {
+  return logs.map(item => {
+    const clone = { ...item };
+    ['tasksFiles', 'detailFiles', 'memoFiles'].forEach(fKey => {
+      const arr = normalizeFilesArray(clone, fKey);
+      clone[fKey] = arr.map(f => ({ id: f.id, name: f.name, size: f.size, type: f.type }));
+    });
+    delete clone.tasksFile; delete clone.tasksPdf;
+    delete clone.detailFile; delete clone.detailPdf;
+    delete clone.memoFile; delete clone.memoPdf;
+
+    if (Array.isArray(clone.qaList)) {
+      clone.qaList = clone.qaList.map(qa => {
+        const qaClone = { ...qa };
+        let qFiles = [];
+        if (Array.isArray(qaClone.files)) qFiles = qaClone.files;
+        else if (qaClone.file || qaClone.pdf) qFiles = [qaClone.file || qaClone.pdf];
+        qaClone.files = qFiles.map(f => ({ id: f.id, name: f.name, size: f.size, type: f.type }));
+        delete qaClone.file; delete qaClone.pdf;
+        return qaClone;
+      });
+    }
+    return clone;
+  });
+}
+
+async function pushToCloud(showAlert = false) {
+  const url = localStorage.getItem(GAS_URL_KEY);
+  if (!url) return;
+  const indicator = document.getElementById('sync-status-indicator');
+  indicator.innerText = "☁️ クラウドに保存中...";
+  try {
+    const safeData = getCloudSafeLogs();
+    await fetch(url, {
+      method: "POST", mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify(safeData)
+    });
+    indicator.innerText = `☁️ クラウド保存済み (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+    if (showAlert) alert('テキストデータをスプレッドシートへ送信しました！');
+  } catch (err) {
+    indicator.innerText = "⚠️ クラウド保存に失敗";
+    if (showAlert) alert('クラウド保存に失敗しました。');
+  }
+}
+
+async function syncWithCloud(silent = false) {
+  const url = localStorage.getItem(GAS_URL_KEY);
+  if (!url) { if (!silent) openSettingsModal(); return; }
+  const indicator = document.getElementById('sync-status-indicator');
+  indicator.innerText = "🔄 クラウドと同期中...";
+  try {
+    const res = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+    const cloudData = await res.json();
+    if (Array.isArray(cloudData) && cloudData.length > 0) {
+      const localMap = new Map();
+      logs.forEach(l => localMap.set(l.id, l));
+
+      logs = cloudData.map(cItem => {
+        const localItem = localMap.get(cItem.id);
+        if (localItem) {
+          ['tasksFiles', 'detailFiles', 'memoFiles'].forEach(fKey => {
+            const locArr = normalizeFilesArray(localItem, fKey);
+            const cloudArr = normalizeFilesArray(cItem, fKey);
+            cItem[fKey] = cloudArr.map(cf => {
+              const matched = locArr.find(lf => lf.id === cf.id || lf.name === cf.name);
+              return matched ? { ...cf, data: matched.data } : cf;
+            });
+          });
+
+          if (Array.isArray(cItem.qaList) && Array.isArray(localItem.qaList)) {
+            cItem.qaList.forEach((qa, idx) => {
+              const locQa = localItem.qaList[idx];
+              if (locQa) {
+                const locQFiles = Array.isArray(locQa.files) ? locQa.files : (locQa.file || locQa.pdf ? [locQa.file || locQa.pdf] : []);
+                const cloudQFiles = Array.isArray(qa.files) ? qa.files : (qa.file || qa.pdf ? [qa.file || qa.pdf] : []);
+                qa.files = cloudQFiles.map(cqf => {
+                  const matched = locQFiles.find(lqf => lqf.id === cqf.id || lqf.name === cqf.name);
+                  return matched ? { ...cqf, data: matched.data } : cqf;
+                });
+              }
+            });
+          }
+        }
+        return cItem;
+      });
+
+      await saveLogs(false);
+      indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+      if (!silent) alert('最新データを同期しました！');
+    } else {
+      await pushToCloud(false);
+      indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
+      if (!silent) alert('ローカルのデータをスプレッドシートに保存しました！');
+    }
+  } catch (err) {
+    indicator.innerText = "⚠️ 同期に失敗";
+    if (!silent) alert('同期に失敗しました。URLまたはアクセス権限（全員）を確認してください。');
+  }
+}
+
+function exportPDF() { window.print(); }
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `work_learning_log_${getLocalDateString()}.json`;
+  a.click();
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async event => {
+      try {
+        const imported = JSON.parse(event.target.result);
+        if (Array.isArray(imported)) {
+          logs = imported;
+          await saveLogs(true);
+          onDateChanged();
+          alert('復元が完了しました！');
+        }
+      } catch (err) { alert('ファイルの読み込みに失敗しました'); }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 </script>
 </body>
