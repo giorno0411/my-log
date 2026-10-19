@@ -502,7 +502,7 @@
     border-left: 3px solid var(--primary);
   }
   
-  /* 以前の美しいデザインと完全一致させたQ&Aスタイル */
+  /* Q&Aスタイル：質問文全体をピンク系に統一 */
   .log-qa-group {
     display: flex;
     flex-direction: column;
@@ -515,9 +515,11 @@
     padding: 8px 10px;
     border-left: 3px solid var(--question-color);
   }
-  .qa-q {
-    color: #fda4af;
+  .qa-q, .qa-q * {
+    color: #fda4af !important;
     font-weight: bold;
+  }
+  .qa-q {
     margin-bottom: 4px;
   }
   .qa-a {
@@ -786,7 +788,7 @@
     .log-tasks { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #f59e0b !important; }
     .log-detail { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #3b82f6 !important; }
     .log-qa-single { background: #f8fafc !important; border-left: 3px solid #f43f5e !important; }
-    .qa-q { color: #be123c !important; }
+    .qa-q, .qa-q * { color: #be123c !important; }
     .qa-a { color: #047857 !important; }
     .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
     .log-file-badge { color: #0284c7 !important; border: 1px solid #ccc !important; background: #fff !important; }
