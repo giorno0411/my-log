@@ -7,7 +7,7 @@
 <!-- PDF描画ライブラリ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- HEIC画像自動変換ライブラリ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <style>
   :root {
     --bg-color: #0f172a;
@@ -504,7 +504,7 @@
     border-left: 3px solid var(--primary);
   }
   
-  /* Q&Aスタイル：質問文全体をピンク系に統一 */
+  /* Q&Aスタイル：以前の左側画像と完全に一致 */
   .log-qa-group {
     display: flex;
     flex-direction: column;
@@ -536,7 +536,7 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  /* ロック中カードの表示 */
+  /* ロック中カード表示 */
   .locked-card-cover {
     background: #131d2e;
     border: 1px dashed #f43f5e;
@@ -563,7 +563,7 @@
   }
   .btn-unlock-trigger:hover { background: #e11d48; }
 
-  /* 閲覧カード上のファイル添付チップコンテナ */
+  /* 添付ファイルバッジ一覧 */
   .log-file-badges-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -670,7 +670,7 @@
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） */
+  /* プレビュー用モーダル */
   .preview-modal-card {
     background: var(--card-bg);
     border: 1px solid var(--card-border);
@@ -1202,7 +1202,6 @@ function lockLog(id) {
   renderLogs();
 }
 
-/* HEIC判定 */
 function isHeicFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
   return ext === 'heic' || ext === 'heif' || file.type === 'image/heic' || file.type === 'image/heif';
@@ -1212,23 +1211,44 @@ function isImageFile(file) {
   return file.type.startsWith("image/") || isHeicFile(file);
 }
 
-/* HEICをJPEGに自動変換してDataURL化 */
+// DataURLからBlobを生成
+function dataURItoBlob(dataURI) {
+  const byteString = atob(dataURI.split(',')[1]);
+  const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+  const ab = new ArrayBuffer(byteString.length);
+  const ia = new Uint8Array(ab);
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([ab], { type: mimeString });
+}
+
+// 確実なHEIC→JPEG変換処理
+async function convertHeicBlobToJpeg(blob) {
+  if (typeof heic2any === 'function') {
+    const res = await heic2any({ blob: blob, toType: "image/jpeg", quality: 0.85 });
+    return Array.isArray(res) ? res[0] : res;
+  }
+  throw new Error("heic2any unavailable");
+}
+
 async function processFileToDataURL(file) {
-  if (isHeicFile(file) && typeof heic2any !== 'undefined') {
+  if (isHeicFile(file)) {
     try {
-      const convertedBlob = await heic2any({
-        blob: file,
-        toType: "image/jpeg",
-        quality: 0.85
-      });
-      const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      const convertedBlob = await convertHeicBlobToJpeg(file);
       return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve({ data: e.target.result, name: file.name.replace(/\.(heic|heif)$/i, '.jpg'), type: 'image', mimeType: 'image/jpeg', size: (blob.size / 1024).toFixed(1) + " KB" });
-        reader.readAsDataURL(blob);
+        reader.onload = (e) => resolve({
+          data: e.target.result,
+          name: file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+          type: 'image',
+          mimeType: 'image/jpeg',
+          size: (convertedBlob.size / 1024).toFixed(1) + " KB"
+        });
+        reader.readAsDataURL(convertedBlob);
       });
     } catch (e) {
-      console.warn("HEIC conversion fallback:", e);
+      console.warn("Direct HEIC conversion fallback:", e);
     }
   }
 
@@ -1378,7 +1398,7 @@ function renderQaFilesPreview(cardEl, fileList) {
 
 /* プレビューモーダル */
 async function openFilePreviewModal(name, dataUri, type) {
-  const isPdf = (type === 'pdf') || (!type && dataUri.startsWith('data:application/pdf'));
+  const isPdf = (type === 'pdf') || (!type && (dataUri.startsWith('data:application/pdf') || name.toLowerCase().endsWith('.pdf')));
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('preview-modal-title');
   const pageControls = document.getElementById('pdf-page-controls');
@@ -1394,7 +1414,26 @@ async function openFilePreviewModal(name, dataUri, type) {
     pageControls.classList.add('hidden');
     canvas.classList.add('hidden');
     loadingMsg.classList.add('hidden');
-    imgEl.src = dataUri;
+
+    // 過去にHEICで保存されていた場合のリアルタイムデコード・フォールバック
+    const isHeicData = name.toLowerCase().endsWith('.heic') || name.toLowerCase().endsWith('.heif') || dataUri.startsWith('data:image/heic') || dataUri.startsWith('data:image/heif');
+    if (isHeicData) {
+      try {
+        loadingMsg.innerText = "HEIC画像を変換中...";
+        loadingMsg.classList.remove('hidden');
+        const blob = dataURItoBlob(dataUri);
+        const converted = await convertHeicBlobToJpeg(blob);
+        imgEl.src = URL.createObjectURL(converted);
+        loadingMsg.classList.add('hidden');
+      } catch (err) {
+        console.warn("Real-time HEIC conversion failed:", err);
+        imgEl.src = dataUri;
+        loadingMsg.classList.add('hidden');
+      }
+    } else {
+      imgEl.src = dataUri;
+    }
+
     imgEl.classList.remove('hidden');
   } else {
     imgEl.classList.add('hidden');
