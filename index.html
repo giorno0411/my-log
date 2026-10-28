@@ -194,6 +194,14 @@
     display: block;
   }
 
+  /* 下線・取り消し線の色を文字色と完全連動 */
+  u, [style*="text-decoration: underline"], [style*="text-decoration:underline"],
+  span[style*="underline"], font[style*="underline"],
+  del, s, strike, [style*="text-decoration: line-through"], [style*="text-decoration:line-through"] {
+    text-decoration-color: currentColor !important;
+    -webkit-text-decoration-color: currentColor !important;
+  }
+
   /* 添付ファイル（複数対応）操作エリア */
   .attach-control-area {
     display: flex;
@@ -401,7 +409,6 @@
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
   .filter-bar { display: flex; flex-direction: column; gap: 6px; }
   
-  /* 集計バッジ表示 */
   .stats-badges-bar {
     display: flex;
     align-items: center;
@@ -528,7 +535,6 @@
     border-left: 3px solid var(--primary);
   }
   
-  /* Q&Aスタイル */
   .log-qa-group {
     display: flex;
     flex-direction: column;
@@ -560,7 +566,6 @@
     border-left: 3px solid var(--gray-badge);
   }
 
-  /* ロック中カード表示 */
   .locked-card-cover {
     background: #131d2e;
     border: 1px dashed #f43f5e;
@@ -587,7 +592,6 @@
   }
   .btn-unlock-trigger:hover { background: #e11d48; }
 
-  /* 添付ファイルバッジ一覧 */
   .log-file-badges-wrap {
     display: flex;
     flex-wrap: wrap;
@@ -755,7 +759,7 @@
     background: #090e1a;
     border-radius: 6px;
     margin-top: 6px;
-    overflow: auto; /* ズーム時にドラッグスクロール可能 */
+    overflow: auto;
     position: relative;
     -webkit-overflow-scrolling: touch;
   }
@@ -932,8 +936,8 @@
       </div>
     </div>
 
-    <!-- 📋 メモ -->
-    <span class="input-label">📋 メモ</span>
+    <!-- 📋 メモ・備考 -->
+    <span class="input-label">📋 メモ・備考</span>
     <div class="rich-toolbar">
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
       <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
@@ -946,7 +950,7 @@
       <button type="button" class="rich-btn color-marker" onmousedown="applyRichStyle(event, 'hiliteColor', '#854d0e')">蛍光</button>
       <button type="button" class="rich-btn" style="color:#94a3b8;" onmousedown="applyRichStyle(event, 'removeFormat')">解除</button>
     </div>
-    <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモを入力..."></div>
+    <div id="input-memo" class="rich-editor" contenteditable="true" placeholder="メモ・備考を入力..."></div>
     <div class="attach-control-area">
       <div class="attach-btn-row">
         <label class="btn-attach-file">
@@ -1088,7 +1092,6 @@ let pendingActionType = null;
 let newFiles = { tasks: [], detail: [], memo: [] };
 let inlineFileState = { tasks: [], detail: [], memo: [] };
 
-// PDF.js 制御・ズーム用変数
 let currentPdfDoc = null;
 let currentPdfPage = 1;
 let totalPdfPages = 1;
@@ -1315,7 +1318,6 @@ async function processFileToDataURL(file) {
   });
 }
 
-/* ファイル複数添付ハンドリング */
 async function handleFilesUpload(e, mode, field) {
   const fileList = Array.from(e.target.files);
   if (fileList.length === 0) return;
@@ -1381,7 +1383,6 @@ function renderFilesAttachList(mode, field, logId = null) {
   }).join('');
 }
 
-/* Q&A用複数ファイル添付ハンドリング */
 async function handleQaFilesUpload(e, cardEl) {
   const fileList = Array.from(e.target.files);
   if (fileList.length === 0) return;
@@ -1443,7 +1444,6 @@ function renderQaFilesPreview(cardEl, fileList) {
   }).join('');
 }
 
-/* プレビューモーダル */
 async function openFilePreviewModal(name, dataUri, type) {
   const isPdf = (type === 'pdf') || (!type && (dataUri.startsWith('data:application/pdf') || name.toLowerCase().endsWith('.pdf')));
   const modal = document.getElementById('file-preview-modal');
@@ -1564,7 +1564,6 @@ function changePdfPage(delta) {
   }
 }
 
-/* PDFズーム操作 */
 function zoomPdf(delta) {
   const newMultiplier = Math.round((pdfUserZoomMultiplier + delta) * 100) / 100;
   if (newMultiplier >= 0.5 && newMultiplier <= 3.0) {
@@ -2182,8 +2181,8 @@ function renderLogs() {
               <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
             </div>
 
-            <!-- メモ編集 -->
-            <span class="input-label">📋 メモ</span>
+            <!-- メモ・備考編集 -->
+            <span class="input-label">📋 メモ・備考</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'italic')"><i>I</i></button>
@@ -2297,7 +2296,7 @@ function renderLogs() {
             ` : ''}
 
             ${item.memo || memoFiles.length > 0 ? `
-              <div class="log-section-label">📋 メモ</div>
+              <div class="log-section-label">📋 メモ・備考</div>
               ${item.memo ? `<div class="log-memo">${cleanAndFormatLegacyText(item.memo)}</div>` : ''}
               ${memoFiles.length > 0 ? `
                 <div class="log-file-badges-wrap">
