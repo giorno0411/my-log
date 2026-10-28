@@ -400,6 +400,30 @@
 
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
   .filter-bar { display: flex; flex-direction: column; gap: 6px; }
+  
+  /* 集計バッジ表示 */
+  .stats-badges-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .stat-badge {
+    background: #1e293b;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-badge b {
+    color: #38bdf8;
+    font-size: 13px;
+  }
+
   .date-cutoff-info {
     font-size: 11px;
     color: #94a3b8;
@@ -504,7 +528,7 @@
     border-left: 3px solid var(--primary);
   }
   
-  /* Q&Aスタイル：以前の左側画像と完全に一致 */
+  /* Q&Aスタイル */
   .log-qa-group {
     display: flex;
     flex-direction: column;
@@ -694,18 +718,24 @@
     gap: 6px;
     flex-shrink: 0;
   }
-  .pdf-page-controls {
+  .pdf-controls-wrap {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .pdf-page-controls, .pdf-zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
     color: var(--text-main);
   }
   .btn-page-nav {
     background: #334155;
     color: #f8fafc;
     border: none;
-    padding: 4px 10px;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 11px;
     font-weight: bold;
@@ -725,8 +755,9 @@
     background: #090e1a;
     border-radius: 6px;
     margin-top: 6px;
-    overflow: hidden;
+    overflow: auto; /* ズーム時にドラッグスクロール可能 */
     position: relative;
+    -webkit-overflow-scrolling: touch;
   }
   #modal-preview-image {
     max-width: 100%;
@@ -735,10 +766,8 @@
     border-radius: 4px;
   }
   #modal-preview-pdf-canvas {
-    max-width: 100%;
-    max-height: 100%;
     display: block;
-    object-fit: contain;
+    margin: auto;
   }
   .pdf-loading-msg {
     position: absolute;
@@ -946,6 +975,13 @@
         <optgroup label="月別で絞り込み" id="filter-month-optgroup"></optgroup>
       </select>
     </div>
+
+    <!-- カウント集計表示バッジ -->
+    <div class="stats-badges-bar">
+      <span class="stat-badge">📊 今月の記録: <b id="stat-count-month">0</b> 件</span>
+      <span class="stat-badge">📚 累計トータル: <b id="stat-count-total">0</b> 件</span>
+    </div>
+
     <div class="date-cutoff-info" id="date-cutoff-info">
       <span id="cutoff-status-text">表示対象: 全記録</span>
       <label class="toggle-filter-label" id="toggle-filter-wrapper">
@@ -1004,16 +1040,26 @@
   </div>
 </div>
 
-<!-- プレビュー用モーダル（PDF・画像両対応・画面枠いっぱいフィット） -->
+<!-- プレビュー用モーダル（PDFズーム・ページ送り対応） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
-      <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:50%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
-      <div id="pdf-page-controls" class="pdf-page-controls hidden">
-        <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
-        <span id="pdf-page-num-display" style="font-weight:bold; min-width:36px; text-align:center;">1 / 1</span>
-        <button type="button" class="btn-page-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
+      <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
+      
+      <!-- PDF用コントロール（ページ送り ＆ ズーム操作） -->
+      <div id="pdf-controls-wrap" class="pdf-controls-wrap hidden">
+        <div class="pdf-page-controls">
+          <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
+          <span id="pdf-page-num-display" style="font-weight:bold; min-width:32px; text-align:center;">1/1</span>
+          <button type="button" class="btn-page-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
+        </div>
+        <div class="pdf-zoom-controls">
+          <button type="button" class="btn-page-nav" onclick="zoomPdf(-0.25)" title="縮小">－</button>
+          <button type="button" class="btn-page-nav" onclick="resetPdfZoom()" id="pdf-zoom-level-display" title="フィットにリセット">100%</button>
+          <button type="button" class="btn-page-nav" onclick="zoomPdf(0.25)" title="拡大">＋</button>
+        </div>
       </div>
+
       <button class="modal-close" onclick="closeFilePreviewModal()">✕</button>
     </div>
     <div class="preview-container" id="preview-container">
@@ -1042,9 +1088,12 @@ let pendingActionType = null;
 let newFiles = { tasks: [], detail: [], memo: [] };
 let inlineFileState = { tasks: [], detail: [], memo: [] };
 
+// PDF.js 制御・ズーム用変数
 let currentPdfDoc = null;
 let currentPdfPage = 1;
 let totalPdfPages = 1;
+let pdfBaseFitScale = 1.0;
+let pdfUserZoomMultiplier = 1.0;
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -1211,7 +1260,6 @@ function isImageFile(file) {
   return file.type.startsWith("image/") || isHeicFile(file);
 }
 
-// DataURLからBlobを生成
 function dataURItoBlob(dataURI) {
   const byteString = atob(dataURI.split(',')[1]);
   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
@@ -1223,7 +1271,6 @@ function dataURItoBlob(dataURI) {
   return new Blob([ab], { type: mimeString });
 }
 
-// 確実なHEIC→JPEG変換処理
 async function convertHeicBlobToJpeg(blob) {
   if (typeof heic2any === 'function') {
     const res = await heic2any({ blob: blob, toType: "image/jpeg", quality: 0.85 });
@@ -1401,7 +1448,7 @@ async function openFilePreviewModal(name, dataUri, type) {
   const isPdf = (type === 'pdf') || (!type && (dataUri.startsWith('data:application/pdf') || name.toLowerCase().endsWith('.pdf')));
   const modal = document.getElementById('file-preview-modal');
   const title = document.getElementById('preview-modal-title');
-  const pageControls = document.getElementById('pdf-page-controls');
+  const pdfControlsWrap = document.getElementById('pdf-controls-wrap');
   const imgEl = document.getElementById('modal-preview-image');
   const canvas = document.getElementById('modal-preview-pdf-canvas');
   const loadingMsg = document.getElementById('pdf-loading-msg');
@@ -1411,11 +1458,10 @@ async function openFilePreviewModal(name, dataUri, type) {
   modal.classList.remove('hidden');
 
   if (!isPdf) {
-    pageControls.classList.add('hidden');
+    pdfControlsWrap.classList.add('hidden');
     canvas.classList.add('hidden');
     loadingMsg.classList.add('hidden');
 
-    // 過去にHEICで保存されていた場合のリアルタイムデコード・フォールバック
     const isHeicData = name.toLowerCase().endsWith('.heic') || name.toLowerCase().endsWith('.heif') || dataUri.startsWith('data:image/heic') || dataUri.startsWith('data:image/heif');
     if (isHeicData) {
       try {
@@ -1438,7 +1484,7 @@ async function openFilePreviewModal(name, dataUri, type) {
   } else {
     imgEl.classList.add('hidden');
     canvas.classList.remove('hidden');
-    pageControls.classList.remove('hidden');
+    pdfControlsWrap.classList.remove('hidden');
     loadingMsg.classList.remove('hidden');
 
     try {
@@ -1451,6 +1497,8 @@ async function openFilePreviewModal(name, dataUri, type) {
       currentPdfDoc = await loadingTask.promise;
       totalPdfPages = currentPdfDoc.numPages;
       currentPdfPage = 1;
+      pdfUserZoomMultiplier = 1.0;
+      updateZoomLevelDisplay();
       
       requestAnimationFrame(() => {
         renderPdfCanvasPage(currentPdfPage);
@@ -1474,16 +1522,17 @@ async function renderPdfCanvasPage(pageNum) {
     const canvas = document.getElementById('modal-preview-pdf-canvas');
     const ctx = canvas.getContext('2d');
 
-    const availWidth = Math.max(container.clientWidth, 200);
-    const availHeight = Math.max(container.clientHeight, 200);
+    const availWidth = Math.max(container.clientWidth - 16, 200);
+    const availHeight = Math.max(container.clientHeight - 16, 200);
     const unscaledViewport = page.getViewport({ scale: 1.0 });
 
     const scaleX = availWidth / unscaledViewport.width;
     const scaleY = availHeight / unscaledViewport.height;
-    const fitScale = Math.min(scaleX, scaleY);
+    pdfBaseFitScale = Math.min(scaleX, scaleY);
 
+    const effectiveScale = pdfBaseFitScale * pdfUserZoomMultiplier;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const viewport = page.getViewport({ scale: fitScale * dpr });
+    const viewport = page.getViewport({ scale: effectiveScale * dpr });
 
     canvas.width = viewport.width;
     canvas.height = viewport.height;
@@ -1501,7 +1550,7 @@ async function renderPdfCanvasPage(pageNum) {
     console.error("Render page error:", e);
     loadingMsg.innerText = "ページの描画に失敗しました。";
   } finally {
-    document.getElementById('pdf-page-num-display').innerText = `${pageNum} / ${totalPdfPages}`;
+    document.getElementById('pdf-page-num-display').innerText = `${pageNum}/${totalPdfPages}`;
     document.getElementById('btn-pdf-prev').disabled = (pageNum <= 1);
     document.getElementById('btn-pdf-next').disabled = (pageNum >= totalPdfPages);
   }
@@ -1512,6 +1561,29 @@ function changePdfPage(delta) {
   if (target >= 1 && target <= totalPdfPages) {
     currentPdfPage = target;
     renderPdfCanvasPage(currentPdfPage);
+  }
+}
+
+/* PDFズーム操作 */
+function zoomPdf(delta) {
+  const newMultiplier = Math.round((pdfUserZoomMultiplier + delta) * 100) / 100;
+  if (newMultiplier >= 0.5 && newMultiplier <= 3.0) {
+    pdfUserZoomMultiplier = newMultiplier;
+    updateZoomLevelDisplay();
+    renderPdfCanvasPage(currentPdfPage);
+  }
+}
+
+function resetPdfZoom() {
+  pdfUserZoomMultiplier = 1.0;
+  updateZoomLevelDisplay();
+  renderPdfCanvasPage(currentPdfPage);
+}
+
+function updateZoomLevelDisplay() {
+  const displayEl = document.getElementById('pdf-zoom-level-display');
+  if (displayEl) {
+    displayEl.innerText = `${Math.round(pdfUserZoomMultiplier * 100)}%`;
   }
 }
 
@@ -1895,7 +1967,22 @@ function saveInlineEdit(id) {
   saveLogs(true);
 }
 
+function updateLogCounts() {
+  const selectedDate = document.getElementById('input-date').value || getLocalDateString();
+  const targetYM = selectedDate.substring(0, 7);
+  
+  const monthCount = logs.filter(item => item.date && item.date.startsWith(targetYM)).length;
+  const totalCount = logs.length;
+
+  const monthEl = document.getElementById('stat-count-month');
+  const totalEl = document.getElementById('stat-count-total');
+  if (monthEl) monthEl.innerText = monthCount;
+  if (totalEl) totalEl.innerText = totalCount;
+}
+
 function renderLogs() {
+  updateLogCounts();
+
   const selectedDate = document.getElementById('input-date').value;
   const period = document.getElementById('filter-period-select').value;
   const isPastFilterOn = document.getElementById('filter-past-only-toggle').checked;
@@ -2197,7 +2284,8 @@ function renderLogs() {
                       ${qFiles.length > 0 ? `
                         <div class="log-file-badges-wrap">
                           ${qFiles.map((qf, qfIdx) => `
-                            <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id},${i}, ${qfIdx})'>${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
+                            <button type="button" class="log-file-badge" onclick='openFileFromQa(${item.id}, ${i}, ${qfIdx})'>
+                              ${qf.type === 'image' ? '🖼️' : '📄'} ${escapeHtml(qf.name)} (${qf.size})
                             </button>
                           `).join('')}
                         </div>
