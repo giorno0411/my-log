@@ -194,19 +194,36 @@
     display: block;
   }
 
-  /* 下線・取り消し線の色を文字色と完全連動（内側に色付き要素がある場合も対応） */
-  u, [style*="underline"], span[style*="underline"], font[style*="underline"],
-  del, s, strike, [style*="line-through"], span[style*="line-through"] {
+  /* 下線・取り消し線の色を文字色に完全連動させる強力スタイルルール */
+  u, [style*="text-decoration: underline"], [style*="text-decoration:underline"],
+  span[style*="underline"], font[style*="underline"],
+  del, s, strike, [style*="text-decoration: line-through"], [style*="text-decoration:line-through"] {
     text-decoration-color: currentColor !important;
     -webkit-text-decoration-color: currentColor !important;
   }
-  u:has([style*="color"]), [style*="underline"]:has([style*="color"]) {
-    text-decoration: none !important;
+  /* u の中に font や span で色が指定されている場合、u の下線色もその色を強制継承 */
+  u:has(font[color]) {
+    text-decoration-color: inherit !important;
   }
-  u [style*="color"], [style*="underline"] [style*="color"] {
-    text-decoration: underline !important;
-    text-decoration-color: currentColor !important;
-    -webkit-text-decoration-color: currentColor !important;
+  u font[color="#ef4444"], u span[style*="#ef4444"], u span[style*="rgb(239, 68, 68)"] {
+    text-decoration: underline;
+    text-decoration-color: #ef4444 !important;
+    -webkit-text-decoration-color: #ef4444 !important;
+  }
+  u font[color="#fde047"], u span[style*="#fde047"], u span[style*="rgb(253, 224, 71)"] {
+    text-decoration: underline;
+    text-decoration-color: #fde047 !important;
+    -webkit-text-decoration-color: #fde047 !important;
+  }
+  u font[color="#4ade80"], u span[style*="#4ade80"], u span[style*="rgb(74, 222, 128)"] {
+    text-decoration: underline;
+    text-decoration-color: #4ade80 !important;
+    -webkit-text-decoration-color: #4ade80 !important;
+  }
+  u font[color="#60a5fa"], u span[style*="#60a5fa"], u span[style*="rgb(96, 165, 250)"] {
+    text-decoration: underline;
+    text-decoration-color: #60a5fa !important;
+    -webkit-text-decoration-color: #60a5fa !important;
   }
 
   /* 添付ファイル（複数対応）操作エリア */
@@ -1057,7 +1074,6 @@
     <div class="preview-modal-header">
       <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
       
-      <!-- PDF用コントロール（ページ送り ＆ ズーム操作） -->
       <div id="pdf-controls-wrap" class="pdf-controls-wrap hidden">
         <div class="pdf-page-controls">
           <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
@@ -1153,6 +1169,26 @@ async function idbLoadLogs() {
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
   document.execCommand(command, false, value);
+  // 色や下線の操作後、内部の u タグに下線カラーを即時同期補正
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    let node = sel.anchorNode;
+    if (node && node.nodeType === 3) node = node.parentNode;
+    while (node && !node.classList?.contains('rich-editor')) {
+      if (node.tagName === 'U' || node.closest?.('u')) {
+        const uEl = node.tagName === 'U' ? node : node.closest('u');
+        const colorTarget = uEl.querySelector('font[color], span[style*="color"]');
+        if (colorTarget) {
+          const col = colorTarget.getAttribute('color') || colorTarget.style.color;
+          if (col) {
+            uEl.style.textDecorationColor = col;
+            uEl.style.webkitTextDecorationColor = col;
+          }
+        }
+      }
+      node = node.parentNode;
+    }
+  }
 }
 
 function getLocalDateString(d = new Date()) {
@@ -1197,10 +1233,10 @@ function cleanAndFormatLegacyText(content) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444;">$1</span>');
-    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
-    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
-    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444; text-decoration-color:#ef4444;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047; text-decoration-color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80; text-decoration-color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa; text-decoration-color:#60a5fa;">$1</span>');
     html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
     html = html.replace(/\n/g, '<br>');
   }
