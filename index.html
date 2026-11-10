@@ -194,39 +194,31 @@
     display: block;
   }
 
-  /* 下線・取り消し線の色を文字色に完全連動させる強力スタイルルール */
+  /* 下線・取り消し線の色を文字色に完全連動 */
   u, [style*="text-decoration: underline"], [style*="text-decoration:underline"],
   span[style*="underline"], font[style*="underline"],
   del, s, strike, [style*="text-decoration: line-through"], [style*="text-decoration:line-through"] {
     text-decoration-color: currentColor !important;
     -webkit-text-decoration-color: currentColor !important;
   }
-  /* u の中に font や span で色が指定されている場合、u の下線色もその色を強制継承 */
-  u:has(font[color]) {
-    text-decoration-color: inherit !important;
-  }
   u font[color="#ef4444"], u span[style*="#ef4444"], u span[style*="rgb(239, 68, 68)"] {
     text-decoration: underline;
     text-decoration-color: #ef4444 !important;
-    -webkit-text-decoration-color: #ef4444 !important;
   }
   u font[color="#fde047"], u span[style*="#fde047"], u span[style*="rgb(253, 224, 71)"] {
     text-decoration: underline;
     text-decoration-color: #fde047 !important;
-    -webkit-text-decoration-color: #fde047 !important;
   }
   u font[color="#4ade80"], u span[style*="#4ade80"], u span[style*="rgb(74, 222, 128)"] {
     text-decoration: underline;
     text-decoration-color: #4ade80 !important;
-    -webkit-text-decoration-color: #4ade80 !important;
   }
   u font[color="#60a5fa"], u span[style*="#60a5fa"], u span[style*="rgb(96, 165, 250)"] {
     text-decoration: underline;
     text-decoration-color: #60a5fa !important;
-    -webkit-text-decoration-color: #60a5fa !important;
   }
 
-  /* 添付ファイル（複数対応）操作エリア */
+  /* 添付ファイル操作エリア */
   .attach-control-area {
     display: flex;
     flex-direction: column;
@@ -889,7 +881,6 @@
       <input type="text" id="input-person" placeholder="🗣️ 話した人">
     </div>
 
-    <!-- パスワード保護設定 -->
     <label class="lock-setting-row">
       <input type="checkbox" id="input-is-locked">
       <span>🔒 パスワード保護を有効にする（閲覧時にパスワードが必要になります）</span>
@@ -1013,8 +1004,8 @@
     <div class="date-cutoff-info" id="date-cutoff-info">
       <span id="cutoff-status-text">表示対象: 全記録</span>
       <label class="toggle-filter-label" id="toggle-filter-wrapper">
-        <input type="checkbox" id="filter-past-only-toggle" checked onchange="togglePastFilter()">
-        選択日以前のみ (ON)
+        <input type="checkbox" id="filter-past-only-toggle" onchange="togglePastFilter()">
+        選択日以前のみ (OFF)
       </label>
     </div>
   </div>
@@ -1169,7 +1160,6 @@ async function idbLoadLogs() {
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
   document.execCommand(command, false, value);
-  // 色や下線の操作後、内部の u タグに下線カラーを即時同期補正
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) {
     let node = sel.anchorNode;
@@ -1233,10 +1223,10 @@ function cleanAndFormatLegacyText(content) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444; text-decoration-color:#ef4444;">$1</span>');
-    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047; text-decoration-color:#fde047;">$1</span>');
-    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80; text-decoration-color:#4ade80;">$1</span>');
-    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa; text-decoration-color:#60a5fa;">$1</span>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
     html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
     html = html.replace(/\n/g, '<br>');
   }
@@ -1651,7 +1641,7 @@ window.onload = async function() {
   
   await loadLogs();
   updateMonthFilterOptions();
-  onDateChanged();
+  onDateChanged(false); // 初期表示時は画面再描画を直接走らせない
   if (localStorage.getItem(GAS_URL_KEY)) syncWithCloud(true);
 };
 
@@ -1768,12 +1758,15 @@ async function saveLogs(triggerCloud = true) {
   if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
 }
 
-function onDateChanged() {
+// 日付変更時の修正：クリックだけで勝手に再描画して隠さないよう調整
+function onDateChanged(triggerRender = true) {
   const selectedDate = document.getElementById('input-date').value;
   updateDateDisplay('input-date', 'date-display-text');
   if (!selectedDate) return;
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加できます`;
-  renderLogs();
+  if (triggerRender) {
+    renderLogs();
+  }
 }
 
 function resetFormForNew() {
@@ -1857,6 +1850,15 @@ function saveNewLog() {
   };
 
   logs.unshift(newLog);
+
+  // 【重要改善】追加した直後に記録が消えたように見えないよう、期間を「全て」にリセット
+  document.getElementById('filter-period-select').value = 'all';
+  const pastToggle = document.getElementById('filter-past-only-toggle');
+  if (pastToggle) {
+    pastToggle.checked = false;
+    document.querySelector('.toggle-filter-label').innerHTML = `<input type="checkbox" id="filter-past-only-toggle" onchange="togglePastFilter()"> 選択日以前のみ (OFF)`;
+  }
+
   saveLogs(true);
   resetFormForNew();
 }
@@ -2526,7 +2528,7 @@ function importJSON() {
         if (Array.isArray(imported)) {
           logs = imported;
           await saveLogs(true);
-          onDateChanged();
+          onDateChanged(true);
           alert('復元が完了しました！');
         }
       } catch (err) { alert('ファイルの読み込みに失敗しました'); }
