@@ -1223,10 +1223,10 @@ function cleanAndFormatLegacyText(content) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444;">$1</span>');
-    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
-    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
-    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444; text-decoration-color:#ef4444;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047; text-decoration-color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80; text-decoration-color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa; text-decoration-color:#60a5fa;">$1</span>');
     html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
     html = html.replace(/\n/g, '<br>');
   }
@@ -1641,7 +1641,7 @@ window.onload = async function() {
   
   await loadLogs();
   updateMonthFilterOptions();
-  onDateChanged(false); // 初期表示時は画面再描画を直接走らせない
+  onDateChanged(false);
   if (localStorage.getItem(GAS_URL_KEY)) syncWithCloud(true);
 };
 
@@ -1758,7 +1758,6 @@ async function saveLogs(triggerCloud = true) {
   if (triggerCloud && localStorage.getItem(GAS_URL_KEY)) pushToCloud();
 }
 
-// 日付変更時の修正：クリックだけで勝手に再描画して隠さないよう調整
 function onDateChanged(triggerRender = true) {
   const selectedDate = document.getElementById('input-date').value;
   updateDateDisplay('input-date', 'date-display-text');
@@ -1802,7 +1801,7 @@ function cleanEditorHTML(html) {
   return cleaned.trim();
 }
 
-function saveNewLog() {
+async function saveNewLog() {
   const date = document.getElementById('input-date').value;
   const place = document.getElementById('input-place').value.trim();
   const tag = document.getElementById('input-tag').value.trim() || "業務";
@@ -1851,7 +1850,6 @@ function saveNewLog() {
 
   logs.unshift(newLog);
 
-  // 【重要改善】追加した直後に記録が消えたように見えないよう、期間を「全て」にリセット
   document.getElementById('filter-period-select').value = 'all';
   const pastToggle = document.getElementById('filter-past-only-toggle');
   if (pastToggle) {
@@ -1859,7 +1857,7 @@ function saveNewLog() {
     document.querySelector('.toggle-filter-label').innerHTML = `<input type="checkbox" id="filter-past-only-toggle" onchange="togglePastFilter()"> 選択日以前のみ (OFF)`;
   }
 
-  saveLogs(true);
+  await saveLogs(true);
   resetFormForNew();
 }
 
@@ -1962,7 +1960,7 @@ function updateInlineDateDisplay(id) {
   }
 }
 
-function saveInlineEdit(id) {
+async function saveInlineEdit(id) {
   const idx = logs.findIndex(item => item.id === id);
   if (idx === -1) return;
   const form = document.getElementById(`inline-form-${id}`);
@@ -2008,7 +2006,7 @@ function saveInlineEdit(id) {
 
   editingInlineLogId = null;
   inlineFileState = { tasks: [], detail: [], memo: [] };
-  saveLogs(true);
+  await saveLogs(true);
 }
 
 function updateLogCounts() {
@@ -2449,6 +2447,7 @@ async function pushToCloud(showAlert = false) {
   }
 }
 
+/* 同期処理の全面改修：ローカルの最新記録を決して消さずにマージする */
 async function syncWithCloud(silent = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) { if (!silent) openSettingsModal(); return; }
@@ -2461,7 +2460,8 @@ async function syncWithCloud(silent = false) {
       const localMap = new Map();
       logs.forEach(l => localMap.set(l.id, l));
 
-      logs = cloudData.map(cItem => {
+      // クラウド側のデータにローカルのファイルデータをマージ
+      const mergedList = cloudData.map(cItem => {
         const localItem = localMap.get(cItem.id);
         if (localItem) {
           ['tasksFiles', 'detailFiles', 'memoFiles'].forEach(fKey => {
@@ -2490,9 +2490,22 @@ async function syncWithCloud(silent = false) {
         return cItem;
       });
 
+      // 【最重要】クラウド側にまだ存在しない「ローカルの新しいデータ」を切り捨てずに残す
+      const cloudIds = new Set(cloudData.map(c => c.id));
+      const localOnlyItems = logs.filter(l => !cloudIds.has(l.id));
+      
+      // 合体して日付順に再ソート
+      logs = [...localOnlyItems, ...mergedList];
+      logs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
       await saveLogs(false);
       indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
       if (!silent) alert('最新データを同期しました！');
+
+      // ローカルに未反映データがあった場合はスプレッドシートへ再プッシュ
+      if (localOnlyItems.length > 0) {
+        pushToCloud(false);
+      }
     } else {
       await pushToCloud(false);
       indicator.innerText = `☁️ アップロード完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
