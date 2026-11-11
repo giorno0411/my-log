@@ -136,9 +136,7 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
-  .rich-toolbar::-webkit-scrollbar {
-    display: none;
-  }
+  .rich-toolbar::-webkit-scrollbar { display: none; }
   .rich-btn {
     flex-shrink: 0;
     background: #1e293b;
@@ -151,9 +149,7 @@
     font-weight: bold;
     user-select: none;
   }
-  .rich-btn:last-child {
-    margin-right: 4px;
-  }
+  .rich-btn:last-child { margin-right: 4px; }
   .rich-btn:active { background: #334155; }
   .color-red { color: #ef4444 !important; }
   .color-yellow { color: #fde047 !important; }
@@ -181,668 +177,173 @@
     resize: vertical;
     overflow: auto;
   }
-  .rich-editor div, .rich-editor p {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.4 !important;
-  }
+  .rich-editor div, .rich-editor p { margin: 0 !important; padding: 0 !important; line-height: 1.4 !important; }
   .rich-editor:focus { border-color: var(--primary); }
-  .rich-editor:empty:before {
-    content: attr(placeholder);
-    color: #64748b;
-    pointer-events: none;
-    display: block;
-  }
+  .rich-editor:empty:before { content: attr(placeholder); color: #64748b; pointer-events: none; display: block; }
 
-  /* 下線・取り消し線の色を文字色に完全連動 */
   u, [style*="text-decoration: underline"], [style*="text-decoration:underline"],
   span[style*="underline"], font[style*="underline"],
   del, s, strike, [style*="text-decoration: line-through"], [style*="text-decoration:line-through"] {
     text-decoration-color: currentColor !important;
     -webkit-text-decoration-color: currentColor !important;
   }
-  u font[color="#ef4444"], u span[style*="#ef4444"], u span[style*="rgb(239, 68, 68)"] {
-    text-decoration: underline;
-    text-decoration-color: #ef4444 !important;
-  }
-  u font[color="#fde047"], u span[style*="#fde047"], u span[style*="rgb(253, 224, 71)"] {
-    text-decoration: underline;
-    text-decoration-color: #fde047 !important;
-  }
-  u font[color="#4ade80"], u span[style*="#4ade80"], u span[style*="rgb(74, 222, 128)"] {
-    text-decoration: underline;
-    text-decoration-color: #4ade80 !important;
-  }
-  u font[color="#60a5fa"], u span[style*="#60a5fa"], u span[style*="rgb(96, 165, 250)"] {
-    text-decoration: underline;
-    text-decoration-color: #60a5fa !important;
-  }
 
-  /* 添付ファイル操作エリア */
-  .attach-control-area {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 12px;
-  }
-  .attach-btn-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
+  .attach-control-area { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .attach-btn-row { display: flex; align-items: center; gap: 8px; }
   .btn-attach-file {
-    background: #1e293b;
-    color: #38bdf8;
-    border: 1px dashed #38bdf8;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
+    background: #1e293b; color: #38bdf8; border: 1px dashed #38bdf8;
+    padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
   }
   .btn-attach-file:hover { background: #334155; }
-  .attach-file-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
+  .attach-file-list { display: flex; flex-wrap: wrap; gap: 6px; }
   .attach-file-tag {
-    background: #0f172a;
-    border: 1px solid var(--primary);
-    color: #93c5fd;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    max-width: 100%;
+    background: #0f172a; border: 1px solid var(--primary); color: #93c5fd;
+    padding: 2px 8px; border-radius: 4px; font-size: 11px; display: inline-flex;
+    align-items: center; gap: 6px; max-width: 100%;
   }
-  .attach-file-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 160px;
-  }
-  .attach-del-btn {
-    background: transparent;
-    border: none;
-    color: #94a3b8;
-    cursor: pointer;
-    font-size: 12px;
-    padding: 0;
-  }
+  .attach-file-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+  .attach-del-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 12px; padding: 0; }
   .attach-del-btn:hover { color: var(--danger); }
 
   input[type="text"], select {
-    background: #0f172a;
-    border: 1px solid var(--card-border);
-    color: var(--text-main);
-    border-radius: 6px;
-    padding: 8px 10px;
-    font-size: 13px;
-    outline: none;
-    font-family: inherit;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
+    background: #0f172a; border: 1px solid var(--card-border); color: var(--text-main);
+    border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;
+    font-family: inherit; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box;
   }
   input:focus, select:focus { border-color: var(--primary); }
 
   .date-input-wrap {
-    position: relative;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    background: #0f172a;
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 10px;
-    cursor: pointer;
-    min-width: 0;
+    position: relative; width: 100%; max-width: 100%; box-sizing: border-box;
+    background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px;
+    display: flex; align-items: center; justify-content: space-between; padding: 8px 10px;
+    cursor: pointer; min-width: 0;
   }
-  .date-input-wrap:focus-within {
-    border-color: var(--primary);
-  }
-  .date-display-text {
-    font-size: 13px;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    user-select: none;
-    font-family: inherit;
-  }
-  .date-calendar-icon {
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-    margin-left: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .date-calendar-icon svg {
-    width: 100%;
-    height: 100%;
-    stroke: #38bdf8;
-  }
+  .date-input-wrap:focus-within { border-color: var(--primary); }
+  .date-display-text { font-size: 13px; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none; font-family: inherit; }
+  .date-calendar-icon { width: 18px; height: 18px; flex-shrink: 0; margin-left: 8px; display: flex; align-items: center; justify-content: center; }
+  .date-calendar-icon svg { width: 100%; height: 100%; stroke: #38bdf8; }
   .date-native-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100% !important;
-    height: 100% !important;
-    opacity: 0 !important;
-    cursor: pointer !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    z-index: 2;
+    position: absolute; top: 0; left: 0; width: 100% !important; height: 100% !important;
+    opacity: 0 !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; border: none !important; z-index: 2;
   }
 
-  .qa-box {
-    background: #131d2e;
-    border: 1px dashed var(--card-border);
-    border-radius: 8px;
-    padding: 10px;
-    margin-bottom: 12px;
-  }
+  .qa-box { background: #131d2e; border: 1px dashed var(--card-border); border-radius: 8px; padding: 10px; margin-bottom: 12px; }
   .qa-select { padding: 4px 8px; font-size: 12px; border-radius: 4px; width: auto; font-family: inherit; }
   .qa-list-container { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
   .qa-item-card {
-    background: #0f172a;
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    padding: 8px;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    background: #0f172a; border: 1px solid var(--card-border); border-radius: 6px;
+    padding: 8px; position: relative; display: flex; flex-direction: column; gap: 4px;
   }
   .qa-item-card .rich-editor { margin-bottom: 4px; min-height: 42px; border-top: 1px solid var(--card-border); border-radius: 6px; }
   .sub-label { font-size: 11px; font-weight: bold; }
-  .btn-qa-del {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    font-size: 14px;
-    padding: 2px 6px;
-  }
+  .btn-qa-del { position: absolute; top: 4px; right: 4px; background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 6px; }
   .btn-qa-del:hover { color: var(--danger); }
-  .btn-add-qa {
-    background: #334155;
-    color: #f8fafc;
-    border: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    margin-top: 6px;
-    align-self: flex-start;
-    font-family: inherit;
-  }
+  .btn-add-qa { background: #334155; color: #f8fafc; border: none; padding: 6px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; margin-top: 6px; align-self: flex-start; font-family: inherit; }
 
   .form-status { font-size: 12px; color: #38bdf8; margin-bottom: 8px; min-height: 16px; font-family: inherit; }
-  
   .btn-group { display: flex; gap: 8px; }
-  .btn-submit {
-    flex: 2;
-    background: var(--primary);
-    color: white;
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-    font-family: inherit;
-  }
+  .btn-submit { flex: 2; background: var(--primary); color: white; border: none; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; font-family: inherit; }
   .btn-submit:hover { background: var(--primary-hover); }
-  .btn-new {
-    flex: 1;
-    background: #334155;
-    color: #f8fafc;
-    border: none;
-    padding: 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-  }
+  .btn-new { flex: 1; background: #334155; color: #f8fafc; border: none; padding: 10px; border-radius: 6px; font-size: 12px; cursor: pointer; font-family: inherit; }
 
   .filter-section { margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px; }
   .filter-bar { display: flex; flex-direction: column; gap: 6px; }
-  
-  .stats-badges-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .stat-badge {
-    background: #1e293b;
-    border: 1px solid var(--card-border);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 12px;
-    color: #94a3b8;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .stat-badge b {
-    color: #38bdf8;
-    font-size: 13px;
-  }
+  .stats-badges-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .stat-badge { background: #1e293b; border: 1px solid var(--card-border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: #94a3b8; display: inline-flex; align-items: center; gap: 4px; }
+  .stat-badge b { color: #38bdf8; font-size: 13px; }
 
   .date-cutoff-info {
-    font-size: 11px;
-    color: #94a3b8;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #1e293b;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid #334155;
-    flex-wrap: wrap;
-    gap: 4px;
+    font-size: 11px; color: #94a3b8; display: flex; justify-content: space-between; align-items: center;
+    background: #1e293b; padding: 6px 10px; border-radius: 6px; border: 1px solid #334155; flex-wrap: wrap; gap: 4px;
   }
-  .toggle-filter-label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    color: #cbd5e1;
-    white-space: nowrap;
-  }
+  .toggle-filter-label { display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: bold; color: #cbd5e1; white-space: nowrap; }
   .toggle-filter-label input[type="checkbox"] { cursor: pointer; accent-color: var(--primary); }
 
   .log-group { margin-bottom: 20px; }
-  .log-date-header {
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--text-sub);
-    margin-bottom: 6px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
+  .log-date-header { font-size: 14px; font-weight: bold; color: var(--text-sub); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
   .log-date-header::after { content: ""; flex: 1; height: 1px; background: var(--card-border); }
-  .log-item {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 8px;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-  }
-  .log-item.is-editing {
-    border-color: var(--primary);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.25);
-  }
-  .log-item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-    gap: 6px;
-  }
+  .log-item { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; }
+  .log-item.is-editing { border-color: var(--primary); box-shadow: 0 0 10px rgba(59, 130, 246, 0.25); }
+  .log-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 6px; }
   .meta-badges { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
   .item-actions { display: flex; gap: 3px; align-items: center; flex-shrink: 0; }
-  .btn-move {
-    background: #3b4668;
-    color: #cbd5e1;
-    border: none;
-    font-size: 11px;
-    padding: 4px 6px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-  }
+  .btn-move { background: #3b4668; color: #cbd5e1; border: none; font-size: 11px; padding: 4px 6px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-move:disabled { opacity: 0.3; cursor: not-allowed; }
   
   .log-place { background: #4c1d95; color: #c4b5fd; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-tag { background: #334155; color: #38bdf8; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-person { background: #064e3b; color: #6ee7b7; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
   .log-lock-badge { background: #881337; color: #fda4af; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: bold; }
-  
   .log-section-label { font-size: 11px; font-weight: bold; color: #94a3b8; margin-top: 8px; margin-bottom: 3px; }
   
-  .log-tasks, .log-detail, .log-memo, .qa-q, .qa-a {
-    font-size: 13px;
-    line-height: 1.4 !important;
-    word-break: break-word;
+  .log-tasks, .log-detail, .log-memo, .qa-q, .qa-a { font-size: 13px; line-height: 1.4 !important; word-break: break-word; }
+  .log-tasks div, .log-tasks p, .log-detail div, .log-detail p, .log-memo div, .log-memo p, .qa-q div, .qa-q p, .qa-a div, .qa-a p {
+    margin: 0 !important; padding: 0 !important; line-height: 1.4 !important;
   }
-  .log-tasks div, .log-tasks p,
-  .log-detail div, .log-detail p,
-  .log-memo div, .log-memo p,
-  .qa-q div, .qa-q p,
-  .qa-a div, .qa-a p {
-    margin: 0 !important;
-    padding: 0 !important;
-    line-height: 1.4 !important;
-  }
+  .log-tasks { color: #e2e8f0; background: #131d2e; padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--warning); }
+  .log-detail { color: #e2e8f0; background: #131d2e; padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--primary); }
+  .log-qa-group { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .log-qa-single { background: #131d2e; border-radius: 6px; padding: 8px 10px; border-left: 3px solid var(--question-color); }
+  .qa-q, .qa-q * { color: #fda4af !important; font-weight: bold; }
+  .qa-q { margin-bottom: 4px; }
+  .qa-a { color: #6ee7b7; }
+  .log-memo { color: #e2e8f0; background: #131d2e; padding: 8px 10px; border-radius: 6px; border-left: 3px solid var(--gray-badge); }
 
-  .log-tasks {
-    color: #e2e8f0;
-    background: #131d2e;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border-left: 3px solid var(--warning);
-  }
-  .log-detail {
-    color: #e2e8f0;
-    background: #131d2e;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border-left: 3px solid var(--primary);
-  }
-  
-  .log-qa-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-  }
-  .log-qa-single {
-    background: #131d2e;
-    border-radius: 6px;
-    padding: 8px 10px;
-    border-left: 3px solid var(--question-color);
-  }
-  .qa-q, .qa-q * {
-    color: #fda4af !important;
-    font-weight: bold;
-  }
-  .qa-q {
-    margin-bottom: 4px;
-  }
-  .qa-a {
-    color: #6ee7b7;
-  }
-
-  .log-memo {
-    color: #e2e8f0;
-    background: #131d2e;
-    padding: 8px 10px;
-    border-radius: 6px;
-    border-left: 3px solid var(--gray-badge);
-  }
-
-  .locked-card-cover {
-    background: #131d2e;
-    border: 1px dashed #f43f5e;
-    border-radius: 6px;
-    padding: 16px 12px;
-    text-align: center;
-    margin-top: 6px;
-  }
-  .locked-card-msg {
-    font-size: 13px;
-    color: #fda4af;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-  .btn-unlock-trigger {
-    background: #be123c;
-    color: #fff;
-    border: none;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-unlock-trigger:hover { background: #e11d48; }
-
-  .log-file-badges-wrap {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-  }
+  .locked-card-cover { background: #131d2e; border: 1px dashed #f43f5e; border-radius: 6px; padding: 16px 12px; text-align: center; margin-top: 6px; }
+  .locked-card-msg { font-size: 13px; color: #fda4af; font-weight: bold; margin-bottom: 8px; }
+  .btn-unlock-trigger { background: #be123c; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .log-file-badges-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .log-file-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: #1e293b;
-    border: 1px solid #0284c7;
-    color: #38bdf8;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background 0.2s;
+    display: inline-flex; align-items: center; gap: 4px; background: #1e293b; border: 1px solid #0284c7;
+    color: #38bdf8; font-size: 11px; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: bold;
   }
-  .log-file-badge:hover {
-    background: #0284c7;
-    color: #ffffff;
-  }
-  
   .btn-edit { background: #334155; color: #38bdf8; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
   .btn-del { background: transparent; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 4px; }
   .btn-del:hover { color: var(--danger); }
   .btn-relock { background: #475569; color: #f8fafc; border: none; font-size: 11px; padding: 4px 7px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 
-  .inline-top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
-    padding-bottom: 6px;
-    border-bottom: 1px dashed var(--card-border);
-  }
+  .inline-top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--card-border); }
   .inline-title-tag { font-size: 12px; font-weight: bold; color: var(--primary); }
   .inline-top-actions { display: flex; gap: 6px; }
-  .btn-save-mini {
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-cancel-mini {
-    background: #334155;
-    color: var(--text-sub);
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-  }
+  .btn-save-mini { background: var(--accent); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; }
+  .btn-cancel-mini { background: #334155; color: var(--text-sub); border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer; }
 
   .inline-btn-group { display: flex; gap: 8px; margin-top: 8px; }
-  .btn-save-inline {
-    flex: 1;
-    background: var(--accent);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-cancel-inline {
-    flex: 1;
-    background: #334155;
-    color: var(--text-main);
-    border: none;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
-    cursor: pointer;
-  }
+  .btn-save-inline { flex: 1; background: var(--accent); color: white; border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .btn-cancel-inline { flex: 1; background: #334155; color: var(--text-main); border: none; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
 
-  .modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px;
-    z-index: 1000;
-  }
-  .modal-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 500px;
-    padding: 20px;
-  }
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; padding: 8px; z-index: 1000; }
+  .modal-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; width: 100%; max-width: 500px; padding: 20px; }
   .modal-title { font-size: 16px; font-weight: bold; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   .modal-close { background: none; border: none; color: var(--text-sub); font-size: 18px; cursor: pointer; }
   .modal-input { width: 100%; margin: 8px 0 16px 0; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
-  /* プレビュー用モーダル */
   .preview-modal-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    width: 100%;
-    max-width: 900px;
-    height: 94vh;
-    max-height: 94vh;
-    display: flex;
-    flex-direction: column;
-    padding: 8px 12px;
-    box-sizing: border-box;
-    overflow: hidden;
+    background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
+    width: 100%; max-width: 900px; height: 94vh; max-height: 94vh; display: flex; flex-direction: column;
+    padding: 8px 12px; box-sizing: border-box; overflow: hidden;
   }
-  .preview-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 6px;
-    border-bottom: 1px solid var(--card-border);
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .pdf-controls-wrap {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-  .pdf-page-controls, .pdf-zoom-controls {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: var(--text-main);
-  }
-  .btn-page-nav {
-    background: #334155;
-    color: #f8fafc;
-    border: none;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-page-nav:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-  }
-  .preview-container {
-    flex: 1;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #090e1a;
-    border-radius: 6px;
-    margin-top: 6px;
-    overflow: auto;
-    position: relative;
-    -webkit-overflow-scrolling: touch;
-  }
-  #modal-preview-image {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    border-radius: 4px;
-  }
-  #modal-preview-pdf-canvas {
-    display: block;
-    margin: auto;
-  }
-  .pdf-loading-msg {
-    position: absolute;
-    color: #38bdf8;
-    font-size: 13px;
-    font-weight: bold;
-  }
+  .preview-modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; border-bottom: 1px solid var(--card-border); gap: 6px; flex-shrink: 0; }
+  .pdf-controls-wrap { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pdf-page-controls, .pdf-zoom-controls { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-main); }
+  .btn-page-nav { background: #334155; color: #f8fafc; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+  .btn-page-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+  .preview-container { flex: 1; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #090e1a; border-radius: 6px; margin-top: 6px; overflow: auto; position: relative; }
+  #modal-preview-image { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 4px; }
+  #modal-preview-pdf-canvas { display: block; margin: auto; }
+  .pdf-loading-msg { position: absolute; color: #38bdf8; font-size: 13px; font-weight: bold; }
 
-  .footer-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    margin-top: 24px;
-    padding-top: 15px;
-    border-top: 1px solid var(--card-border);
-    font-size: 12px;
-    color: var(--text-sub);
-  }
+  .footer-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 24px; padding-top: 15px; border-top: 1px solid var(--card-border); font-size: 12px; color: var(--text-sub); }
   .footer-btn { background: none; border: none; color: var(--text-sub); cursor: pointer; text-decoration: underline; padding: 0; }
   .hidden { display: none !important; }
-
-  @media (min-width: 360px) and (max-width: 599px) {
-    .form-row { grid-template-columns: repeat(2, 1fr); }
-  }
 
   @media (min-width: 600px) {
     body { padding: 20px; }
     .form-row { grid-template-columns: repeat(4, 1fr); }
     .filter-bar { flex-direction: row; }
     .footer-actions { flex-direction: row; justify-content: space-between; }
-    .rich-toolbar { gap: 4px; padding: 5px 8px; }
-    .rich-btn { padding: 3px 8px; }
-  }
-
-  @media print {
-    body { background-color: #ffffff !important; color: #000000 !important; padding: 0; }
-    .container { max-width: 100%; }
-    header h1 { font-size: 20px; color: #000; }
-    .header-actions, .card, .filter-section, .footer-actions, .item-actions, .modal-overlay, .attach-control-area { display: none !important; }
-    .log-group { margin-bottom: 20px; page-break-inside: avoid; }
-    .log-date-header { color: #000; font-size: 15px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
-    .log-date-header::after { display: none; }
-    .log-item { background: #fafafa !important; border: 1px solid #e2e8f0 !important; color: #000 !important; padding: 10px 14px; margin-bottom: 8px; }
-    .log-place { background: #f3e8ff !important; color: #6b21a8 !important; }
-    .log-tag { background: #e2e8f0 !important; color: #0f172a !important; }
-    .log-person { background: #e6f4ea !important; color: #137333 !important; }
-    .log-section-label { color: #475569 !important; }
-    .log-tasks { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #f59e0b !important; }
-    .log-detail { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #3b82f6 !important; }
-    .log-qa-single { background: #f8fafc !important; border-left: 3px solid #f43f5e !important; }
-    .qa-q, .qa-q * { color: #be123c !important; }
-    .qa-a { color: #047857 !important; }
-    .log-memo { background: #f8fafc !important; color: #1e293b !important; border-left: 3px solid #64748b !important; }
-    .log-file-badge { color: #0284c7 !important; border: 1px solid #ccc !important; background: #fff !important; }
   }
 </style>
 </head>
@@ -868,9 +369,6 @@
             <line x1="16" y1="2" x2="16" y2="6"></line>
             <line x1="8" y1="2" x2="8" y2="6"></line>
             <line x1="3" y1="10" x2="21" y2="10"></line>
-            <circle cx="8" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-            <circle cx="12" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-            <circle cx="16" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
           </svg>
         </div>
         <input type="date" id="input-date" class="date-native-input" onchange="onDateChanged()">
@@ -995,7 +493,6 @@
       </select>
     </div>
 
-    <!-- カウント集計表示バッジ -->
     <div class="stats-badges-bar">
       <span class="stat-badge">📊 今月の記録: <b id="stat-count-month">0</b> 件</span>
       <span class="stat-badge">📚 累計トータル: <b id="stat-count-total">0</b> 件</span>
@@ -1022,7 +519,6 @@
   </div>
 </div>
 
-<!-- 設定モーダル -->
 <div class="modal-overlay hidden" id="settings-modal">
   <div class="modal-card">
     <div class="modal-title">
@@ -1031,7 +527,7 @@
     </div>
     <p style="font-size: 13px; color: var(--text-sub); line-height: 1.5; margin: 0 0 8px 0;">
       Google Apps Scriptで発行した「ウェブアプリのURL」を貼り付けると、PCとスマホでテキストデータを同期できます。<br>
-      <span style="color:#38bdf8; font-size:11px;">※添付ファイル本体は端末内（IndexedDB）に安全に完全保存されます。</span>
+      <span style="color:#38bdf8; font-size:11px;">※添付ファイル本体は端末内（IndexedDB）に完全保存されます。</span>
     </p>
     <input type="text" id="gas-url-input" class="modal-input" placeholder="https://script.google.com/macros/s/.../exec">
     <div class="modal-actions">
@@ -1041,7 +537,6 @@
   </div>
 </div>
 
-<!-- パスワード解除入力モーダル -->
 <div class="modal-overlay hidden" id="password-modal">
   <div class="modal-card">
     <div class="modal-title">
@@ -1059,12 +554,10 @@
   </div>
 </div>
 
-<!-- プレビュー用モーダル（PDFズーム・ページ送り対応） -->
 <div class="modal-overlay hidden" id="file-preview-modal">
   <div class="preview-modal-card">
     <div class="preview-modal-header">
       <span id="preview-modal-title" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40%; font-size:13px; font-weight:bold;">📄 添付ファイル</span>
-      
       <div id="pdf-controls-wrap" class="pdf-controls-wrap hidden">
         <div class="pdf-page-controls">
           <button type="button" class="btn-page-nav" id="btn-pdf-prev" onclick="changePdfPage(-1)">◀ 前</button>
@@ -1072,12 +565,11 @@
           <button type="button" class="btn-page-nav" id="btn-pdf-next" onclick="changePdfPage(1)">次 ▶</button>
         </div>
         <div class="pdf-zoom-controls">
-          <button type="button" class="btn-page-nav" onclick="zoomPdf(-0.25)" title="縮小">－</button>
-          <button type="button" class="btn-page-nav" onclick="resetPdfZoom()" id="pdf-zoom-level-display" title="フィットにリセット">100%</button>
-          <button type="button" class="btn-page-nav" onclick="zoomPdf(0.25)" title="拡大">＋</button>
+          <button type="button" class="btn-page-nav" onclick="zoomPdf(-0.25)">－</button>
+          <button type="button" class="btn-page-nav" onclick="resetPdfZoom()" id="pdf-zoom-level-display">100%</button>
+          <button type="button" class="btn-page-nav" onclick="zoomPdf(0.25)">＋</button>
         </div>
       </div>
-
       <button class="modal-close" onclick="closeFilePreviewModal()">✕</button>
     </div>
     <div class="preview-container" id="preview-container">
@@ -1160,25 +652,6 @@ async function idbLoadLogs() {
 function applyRichStyle(e, command, value = null) {
   e.preventDefault();
   document.execCommand(command, false, value);
-  const sel = window.getSelection();
-  if (sel && sel.rangeCount > 0) {
-    let node = sel.anchorNode;
-    if (node && node.nodeType === 3) node = node.parentNode;
-    while (node && !node.classList?.contains('rich-editor')) {
-      if (node.tagName === 'U' || node.closest?.('u')) {
-        const uEl = node.tagName === 'U' ? node : node.closest('u');
-        const colorTarget = uEl.querySelector('font[color], span[style*="color"]');
-        if (colorTarget) {
-          const col = colorTarget.getAttribute('color') || colorTarget.style.color;
-          if (col) {
-            uEl.style.textDecorationColor = col;
-            uEl.style.webkitTextDecorationColor = col;
-          }
-        }
-      }
-      node = node.parentNode;
-    }
-  }
 }
 
 function getLocalDateString(d = new Date()) {
@@ -1223,10 +696,10 @@ function cleanAndFormatLegacyText(content) {
     html = escapeHtml(html);
     html = html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444; text-decoration-color:#ef4444;">$1</span>');
-    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047; text-decoration-color:#fde047;">$1</span>');
-    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80; text-decoration-color:#4ade80;">$1</span>');
-    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa; text-decoration-color:#60a5fa;">$1</span>');
+    html = html.replace(/\{red:(.+?)\}/g, '<span style="color:#ef4444;">$1</span>');
+    html = html.replace(/\{yellow:(.+?)\}/g, '<span style="color:#fde047;">$1</span>');
+    html = html.replace(/\{green:(.+?)\}/g, '<span style="color:#4ade80;">$1</span>');
+    html = html.replace(/\{blue:(.+?)\}/g, '<span style="color:#60a5fa;">$1</span>');
     html = html.replace(/\{m-yellow:(.+?)\}/g, '<span style="background-color:#854d0e; color:#fef08a; padding:1px 3px; border-radius:3px;">$1</span>');
     html = html.replace(/\n/g, '<br>');
   }
@@ -1238,11 +711,8 @@ function cleanAndFormatLegacyText(content) {
 function b64toUint8Array(dataURI) {
   const base64Data = dataURI.split(',')[1];
   const binaryStr = atob(base64Data);
-  const len = binaryStr.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryStr.charCodeAt(i);
-  }
+  const bytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
   return bytes;
 }
 
@@ -1267,14 +737,9 @@ function submitPasswordUnlock() {
     const action = pendingActionType;
     unlockedLogIds.add(targetId);
     closePasswordModal();
-
-    if (action === 'edit') {
-      startInlineEdit(targetId);
-    } else if (action === 'delete') {
-      deleteLog(targetId);
-    } else {
-      renderLogs();
-    }
+    if (action === 'edit') startInlineEdit(targetId);
+    else if (action === 'delete') deleteLog(targetId);
+    else renderLogs();
   } else {
     alert("パスワードが正しくありません。");
     document.getElementById('password-input').value = "";
@@ -1301,9 +766,7 @@ function dataURItoBlob(dataURI) {
   const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
   const ab = new ArrayBuffer(byteString.length);
   const ia = new Uint8Array(ab);
-  for (let i = 0; i < byteString.length; i++) {
-    ia[i] = byteString.charCodeAt(i);
-  }
+  for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
   return new Blob([ab], { type: mimeString });
 }
 
@@ -1486,8 +949,7 @@ async function openFilePreviewModal(name, dataUri, type) {
   const canvas = document.getElementById('modal-preview-pdf-canvas');
   const loadingMsg = document.getElementById('pdf-loading-msg');
 
-  const icon = isPdf ? '📄' : '🖼️';
-  title.innerText = `${icon} ${name}`;
+  title.innerText = `${isPdf ? '📄' : '🖼️'} ${name}`;
   modal.classList.remove('hidden');
 
   if (!isPdf) {
@@ -1505,14 +967,12 @@ async function openFilePreviewModal(name, dataUri, type) {
         imgEl.src = URL.createObjectURL(converted);
         loadingMsg.classList.add('hidden');
       } catch (err) {
-        console.warn("Real-time HEIC conversion failed:", err);
         imgEl.src = dataUri;
         loadingMsg.classList.add('hidden');
       }
     } else {
       imgEl.src = dataUri;
     }
-
     imgEl.classList.remove('hidden');
   } else {
     imgEl.classList.add('hidden');
@@ -1522,22 +982,14 @@ async function openFilePreviewModal(name, dataUri, type) {
 
     try {
       const pdfDataBytes = b64toUint8Array(dataUri);
-      const loadingTask = pdfjsLib.getDocument({
-        data: pdfDataBytes,
-        disableWorker: true,
-        useSystemFonts: true
-      });
+      const loadingTask = pdfjsLib.getDocument({ data: pdfDataBytes, disableWorker: true, useSystemFonts: true });
       currentPdfDoc = await loadingTask.promise;
       totalPdfPages = currentPdfDoc.numPages;
       currentPdfPage = 1;
       pdfUserZoomMultiplier = 1.0;
       updateZoomLevelDisplay();
-      
-      requestAnimationFrame(() => {
-        renderPdfCanvasPage(currentPdfPage);
-      });
+      requestAnimationFrame(() => renderPdfCanvasPage(currentPdfPage));
     } catch (err) {
-      console.error("PDF Canvas描画失敗:", err);
       loadingMsg.innerText = "PDFの描画に失敗しました。";
     }
   }
@@ -1559,10 +1011,7 @@ async function renderPdfCanvasPage(pageNum) {
     const availHeight = Math.max(container.clientHeight - 16, 200);
     const unscaledViewport = page.getViewport({ scale: 1.0 });
 
-    const scaleX = availWidth / unscaledViewport.width;
-    const scaleY = availHeight / unscaledViewport.height;
-    pdfBaseFitScale = Math.min(scaleX, scaleY);
-
+    pdfBaseFitScale = Math.min(availWidth / unscaledViewport.width, availHeight / unscaledViewport.height);
     const effectiveScale = pdfBaseFitScale * pdfUserZoomMultiplier;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const viewport = page.getViewport({ scale: effectiveScale * dpr });
@@ -1572,15 +1021,9 @@ async function renderPdfCanvasPage(pageNum) {
     canvas.style.width = `${viewport.width / dpr}px`;
     canvas.style.height = `${viewport.height / dpr}px`;
 
-    const renderContext = {
-      canvasContext: ctx,
-      viewport: viewport
-    };
-
-    await page.render(renderContext).promise;
+    await page.render({ canvasContext: ctx, viewport: viewport }).promise;
     loadingMsg.classList.add('hidden');
   } catch(e) {
-    console.error("Render page error:", e);
     loadingMsg.innerText = "ページの描画に失敗しました。";
   } finally {
     document.getElementById('pdf-page-num-display').innerText = `${pageNum}/${totalPdfPages}`;
@@ -1614,16 +1057,13 @@ function resetPdfZoom() {
 
 function updateZoomLevelDisplay() {
   const displayEl = document.getElementById('pdf-zoom-level-display');
-  if (displayEl) {
-    displayEl.innerText = `${Math.round(pdfUserZoomMultiplier * 100)}%`;
-  }
+  if (displayEl) displayEl.innerText = `${Math.round(pdfUserZoomMultiplier * 100)}%`;
 }
 
 function closeFilePreviewModal() {
   const modal = document.getElementById('file-preview-modal');
   const imgEl = document.getElementById('modal-preview-image');
   const canvas = document.getElementById('modal-preview-pdf-canvas');
-  
   imgEl.src = "";
   currentPdfDoc = null;
   if (canvas) {
@@ -1729,9 +1169,7 @@ function removeQaInputRow(btn) {
 function normalizeFilesArray(item, field) {
   if (Array.isArray(item[field])) return item[field];
   const oldSingle = item[field] || item[`${field.replace('Files', '')}File`] || item[`${field.replace('Files', '')}Pdf`];
-  if (oldSingle && typeof oldSingle === 'object') {
-    return [oldSingle];
-  }
+  if (oldSingle && typeof oldSingle === 'object') return [oldSingle];
   return [];
 }
 
@@ -1763,9 +1201,7 @@ function onDateChanged(triggerRender = true) {
   updateDateDisplay('input-date', 'date-display-text');
   if (!selectedDate) return;
   document.getElementById('form-status').innerText = `✨ ${formatDisplayDate(selectedDate)} に記録を追加できます`;
-  if (triggerRender) {
-    renderLogs();
-  }
+  if (triggerRender) renderLogs();
 }
 
 function resetFormForNew() {
@@ -1955,9 +1391,7 @@ function updateInlineDateDisplay(id) {
   if (!form) return;
   const input = form.querySelector('.edit-date');
   const textEl = form.querySelector('.inline-date-text');
-  if (input && textEl) {
-    textEl.innerText = formatDisplayDate(input.value) || "日付を選択";
-  }
+  if (input && textEl) textEl.innerText = formatDisplayDate(input.value) || "日付を選択";
 }
 
 async function saveInlineEdit(id) {
@@ -2012,7 +1446,6 @@ async function saveInlineEdit(id) {
 function updateLogCounts() {
   const selectedDate = document.getElementById('input-date').value || getLocalDateString();
   const targetYM = selectedDate.substring(0, 7);
-  
   const monthCount = logs.filter(item => item.date && item.date.startsWith(targetYM)).length;
   const totalCount = logs.length;
 
@@ -2126,9 +1559,6 @@ function renderLogs() {
                     <line x1="16" y1="2" x2="16" y2="6"></line>
                     <line x1="8" y1="2" x2="8" y2="6"></line>
                     <line x1="3" y1="10" x2="21" y2="10"></line>
-                    <circle cx="8" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-                    <circle cx="12" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
-                    <circle cx="16" cy="15" r="1" fill="#ffffff" stroke="none"></circle>
                   </svg>
                 </div>
                 <input type="date" class="edit-date date-native-input" value="${item.date}" onchange="updateInlineDateDisplay(${item.id})">
@@ -2143,7 +1573,6 @@ function renderLogs() {
               <span>🔒 パスワード保護を有効にする</span>
             </label>
 
-            <!-- 業務内容編集 -->
             <span class="input-label">📌 業務内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -2168,7 +1597,6 @@ function renderLogs() {
               <div id="inline-tasks-file-list-${item.id}" class="attach-file-list"></div>
             </div>
 
-            <!-- 学習内容編集 -->
             <span class="input-label">💡 学習内容</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -2193,7 +1621,6 @@ function renderLogs() {
               <div id="inline-detail-file-list-${item.id}" class="attach-file-list"></div>
             </div>
 
-            <!-- Q&A編集 -->
             <div class="qa-box">
               <span class="input-label">❓ 疑問点・回答</span>
               <div class="qa-list-container" id="${inlineQaContainerId}">
@@ -2224,7 +1651,6 @@ function renderLogs() {
               <button type="button" class="btn-add-qa" onclick="addInlineQaRow('${inlineQaContainerId}')">＋ 疑問を追加</button>
             </div>
 
-            <!-- メモ・備考編集 -->
             <span class="input-label">📋 メモ・備考</span>
             <div class="rich-toolbar">
               <button type="button" class="rich-btn" onmousedown="applyRichStyle(event, 'bold')"><b>B</b></button>
@@ -2267,11 +1693,11 @@ function renderLogs() {
             </div>
             <div class="item-actions">
               ${itemsOnDay.length > 1 ? `
-                <button class="btn-move" ${isFirst ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', -1)" title="上へ">▲</button>
-                <button class="btn-move" ${isLast ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', 1)" title="下へ">▼</button>
+                <button class="btn-move" ${isFirst ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', -1)">▲</button>
+                <button class="btn-move" ${isLast ? 'disabled' : ''} onclick="moveLogOrder(${item.id}, '${item.date}', 1)">▼</button>
               ` : ''}
               ${isLocked && isUnlocked ? `
-                <button class="btn-relock" onclick="lockLog(${item.id})" title="ロックする">🔒 ロック</button>
+                <button class="btn-relock" onclick="lockLog(${item.id})">🔒 ロック</button>
               ` : ''}
               <button class="btn-edit" onclick="startInlineEdit(${item.id})">✏️ 編集</button>
               <button class="btn-del" onclick="deleteLog(${item.id})">✕</button>
@@ -2447,7 +1873,6 @@ async function pushToCloud(showAlert = false) {
   }
 }
 
-/* 同期処理の全面改修：ローカルの最新記録を決して消さずにマージする */
 async function syncWithCloud(silent = false) {
   const url = localStorage.getItem(GAS_URL_KEY);
   if (!url) { if (!silent) openSettingsModal(); return; }
@@ -2460,7 +1885,6 @@ async function syncWithCloud(silent = false) {
       const localMap = new Map();
       logs.forEach(l => localMap.set(l.id, l));
 
-      // クラウド側のデータにローカルのファイルデータをマージ
       const mergedList = cloudData.map(cItem => {
         const localItem = localMap.get(cItem.id);
         if (localItem) {
@@ -2490,11 +1914,9 @@ async function syncWithCloud(silent = false) {
         return cItem;
       });
 
-      // 【最重要】クラウド側にまだ存在しない「ローカルの新しいデータ」を切り捨てずに残す
       const cloudIds = new Set(cloudData.map(c => c.id));
       const localOnlyItems = logs.filter(l => !cloudIds.has(l.id));
       
-      // 合体して日付順に再ソート
       logs = [...localOnlyItems, ...mergedList];
       logs.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
@@ -2502,7 +1924,6 @@ async function syncWithCloud(silent = false) {
       indicator.innerText = `☁️ 同期完了 (${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })})`;
       if (!silent) alert('最新データを同期しました！');
 
-      // ローカルに未反映データがあった場合はスプレッドシートへ再プッシュ
       if (localOnlyItems.length > 0) {
         pushToCloud(false);
       }
